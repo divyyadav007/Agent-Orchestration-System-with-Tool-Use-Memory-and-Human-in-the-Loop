@@ -1,0 +1,46 @@
+# Python virtual environment
+venv/
+.venv/
+env/
+.env
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables (contains API keys)
+.env
+.env.local
+
+# ChromaDB persistent data
+chroma_data/
+
+# LangGraph SQLite checkpoint
+agent_checkpoints.db
+*.db
+
+# Docker
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Streamlit
+.streamlit/secrets.toml

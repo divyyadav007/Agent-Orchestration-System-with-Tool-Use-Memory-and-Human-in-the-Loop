@@ -1,0 +1,16 @@
+from src.tools import registry
+
+# Check registered tools
+print("Registered tools:", list(registry.tools.keys()))
+
+# Test web_search
+try:
+    results = registry.execute("web_search", {"query": "AI regulations", "num_results": 3})
+    print("Search results:", results)
+except Exception as e:
+    print("Error:", e)
+
+# Print invocation log
+print("\nInvocation log:")
+for inv in registry.invocation_log:
+    print(f"  Tool: {inv.tool_name}, Params: {inv.params}, Result: {inv.result}, Error: {inv.error}")

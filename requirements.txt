@@ -1,0 +1,59 @@
+# requirements.txt# ============================================================
+# Core AI / Orchestration
+# ============================================================
+langgraph>=0.2.0             # State machine for agent workflows
+langchain-core>=0.3.0        # Base abstractions (messages, LLMs)
+langchain-openai>=0.2.0      # OpenAI LLM integration (you can swap later)
+pydantic>=2.0                # Data validation & structured output
+
+# ============================================================
+# Memory
+# ============================================================
+redis>=5.0                   # Short-term working memory
+chromadb>=0.5.0              # Long-term semantic memory (vector store)
+sentence-transformers>=2.2.0 # Local embeddings (all-MiniLM-L6-v2)
+psycopg2-binary>=2.9         # PostgreSQL client (optional for memory/observability)
+
+# ============================================================
+# API & Background Tasks
+# ============================================================
+fastapi>=0.110.0             # API server for human-in-the-loop endpoints
+uvicorn[standard]>=0.27.0    # ASGI server
+celery>=5.3.0                # Distributed task queue (for async tool execution)
+redis>=5.0                   # Celery broker (same Redis instance)  <-- just keep this line if you want clarity, but it's already above
+
+# ============================================================
+# Human Review UI (Phase 3)
+# ============================================================
+streamlit>=1.30.0            # Minimal review dashboard
+
+# ============================================================
+# Observability & Tracing (Phase 4)
+# ============================================================
+# (We’ll build our own tracer, but these can be used optionally)
+# langsmith>=0.1.0           # Optional LangSmith tracing
+# openai>=1.40.0             # For cost tracking if using OpenAI
+rich>=13.0                   # Pretty console output / trace display
+
+# ============================================================
+# Utilities
+# ============================================================
+python-dotenv>=1.0           # Load .env files
+httpx>=0.27.0                # Async HTTP client for tool calling
+beautifulsoup4>=4.12         # Web scraping (for research specialist)
+docker>=7.0                  # Python Docker SDK (for sandboxed code exec)
+sqlalchemy>=2.0              # ORM for PostgreSQL (if needed)
+alembic>=1.13                # Database migrations
+
+# ============================================================
+# Testing & Development
+# ============================================================
+pytest>=8.0
+pytest-asyncio>=0.23
+pytest-mock>=3.12
+factory-boy>=3.3             # Test data factories
+black>=24.0                  # Formatter
+flake8>=7.0                  # Linter
+mypy>=1.8                    # Type checker
+
+sqlite
