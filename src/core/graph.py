@@ -1,4 +1,3 @@
-# src/core/graph.py
 from langgraph.graph import StateGraph, END
 from src.core.state import WorkflowState
 from src.core.supervisor import supervisor_node, validation_node
@@ -7,7 +6,6 @@ from src.core.reviewer import reviewer_node
 from src.core.specialists.nodes import research_node, writing_node, code_node
 from src.core.human_loop import escalation_node
 
-# Specialist node name mapping for routing
 SPECIALIST_NODE_MAP = {
     "research": "research_specialist",
     "data": "data_specialist",
@@ -15,10 +13,8 @@ SPECIALIST_NODE_MAP = {
     "code": "code_specialist"
 }
 
-def build_graph(checkpointer=None) -> StateGraph:
+def build_graph(checkpointer=None):
     builder = StateGraph(WorkflowState)
-    
-    # Add all nodes
     builder.add_node("supervisor", supervisor_node)
     builder.add_node("validate", validation_node)
     builder.add_node("selector", selector_node)
@@ -27,79 +23,56 @@ def build_graph(checkpointer=None) -> StateGraph:
     builder.add_node("code_specialist", code_node)
     builder.add_node("reviewer", reviewer_node)
     builder.add_node("escalation", escalation_node)
-    
-    # Entry point
+
     builder.set_entry_point("supervisor")
     builder.add_edge("supervisor", "validate")
-    
-    # After validate: retry or go to selector
+
     def after_validate(state: WorkflowState) -> str:
         if state["validation_errors"] is not None and state.get("retry_count", 0) < 3:
             return "supervisor"
-        else:
-            return "selector"
-    
-    builder.add_conditional_edges(
-        "validate",
-        after_validate,
-        {
-            "supervisor": "supervisor",
-            "selector": "selector"
-        }
-    )
-    
-    # After selector: route to specialist or END
+        return "selector"
+
+    builder.add_conditional_edges("validate", after_validate, {
+        "supervisor": "supervisor",
+        "selector": "selector"
+    })
+
     def after_selector(state: WorkflowState) -> str:
         task_id = state.get("current_task_id")
         if task_id is None:
             return END
         assigned = state["current_task_assigned_to"]
         return SPECIALIST_NODE_MAP.get(assigned, END)
-    
-    builder.add_conditional_edges(
-        "selector",
-        after_selector,
-        {
-            "research_specialist": "research_specialist",
-            "writing_specialist": "writing_specialist",
-            "code_specialist": "code_specialist",
-            END: END
-        }
-    )
-    
-    # Specialist -> reviewer (always)
+
+    builder.add_conditional_edges("selector", after_selector, {
+        "research_specialist": "research_specialist",
+        "writing_specialist": "writing_specialist",
+        "code_specialist": "code_specialist",
+        END: END
+    })
+
     builder.add_edge("research_specialist", "reviewer")
     builder.add_edge("writing_specialist", "reviewer")
     builder.add_edge("code_specialist", "reviewer")
-    
-    # After reviewer: retry, escalate, or go to selector
+
     def after_reviewer(state: WorkflowState) -> str:
         task_id = state.get("current_task_id")
         if task_id is None:
-            return "selector"   # task already completed, move to next
-        
+            return "selector"
         retry_count = state.get("current_task_retry_count", 0)
-        if retry_count >= 2:    # max 2 retries -> escalate
+        if retry_count >= 2:
             return "escalation"
-        else:
-            assigned = state["current_task_assigned_to"]
-            return SPECIALIST_NODE_MAP.get(assigned, END)
-    
-    builder.add_conditional_edges(
-        "reviewer",
-        after_reviewer,
-        {
-            "research_specialist": "research_specialist",
-            "writing_specialist": "writing_specialist",
-            "code_specialist": "code_specialist",
-            "selector": "selector",
-            "escalation": "escalation",
-            END: END
-        }
-    )
-    
-    # Escalation node always goes back to selector (state update done inside node)
+        assigned = state["current_task_assigned_to"]
+        return SPECIALIST_NODE_MAP.get(assigned, END)
+
+    builder.add_conditional_edges("reviewer", after_reviewer, {
+        "research_specialist": "research_specialist",
+        "writing_specialist": "writing_specialist",
+        "code_specialist": "code_specialist",
+        "selector": "selector",
+        "escalation": "escalation",
+        END: END
+    })
+
     builder.add_edge("escalation", "selector")
-    
-    # Compile with optional checkpointer
     return builder.compile(checkpointer=checkpointer)

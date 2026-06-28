@@ -4,6 +4,8 @@ from src.utils.llm import get_llm
 from src.core.models import ExecutionPlan, SubTask
 from src.core.state import WorkflowState
 from src.memory.manager import memory_manager
+from src.utils.llm import invoke_with_retry
+
 
 
 SUPERVISOR_SYSTEM_PROMPT = """You are a task planning supervisor. Given a user request, you will create an execution plan in structured JSON format. You have the following specialists available:
@@ -64,7 +66,8 @@ def supervisor_node(state: WorkflowState) -> dict:
     if similar_tasks:
         memory_context = "Similar past tasks and their results:\n"
         for i, task in enumerate(similar_tasks):
-            memory_context += f"{i+1}. {task['document']}\n"
+            doc = task['document'][:150] + "..."   # 150 chars max
+            memory_context += f"{i+1}. {doc}\n"
     
     messages = [
         SystemMessage(content=SUPERVISOR_SYSTEM_PROMPT),
@@ -75,7 +78,8 @@ def supervisor_node(state: WorkflowState) -> dict:
         feedback = HumanMessage(content=f"Previous plan had errors: {state['validation_errors']}. Please fix the plan.")
         messages.append(feedback)
     
-    plan = structured_llm.invoke(messages)
+    # ... inside supervisor_node ...
+    plan = invoke_with_retry(structured_llm, messages)
     return {"plan": plan, "retry_count": state.get("retry_count", 0) + 1}
 
 def validation_node(state: WorkflowState) -> dict:

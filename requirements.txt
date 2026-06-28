@@ -56,4 +56,5 @@ black>=24.0                  # Formatter
 flake8>=7.0                  # Linter
 mypy>=1.8                    # Type checker
 
-sqlite
+tavily-python
+langchain

@@ -1,8 +1,16 @@
+import sqlite3
+from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.errors import GraphInterrupt
 from src.core.graph import build_graph
-from src.memory.manager import memory_manager
+from src.observability.tracer import GraphTracer
+from src.tools import registry
+from rich import print as rprint 
+# Connect to SQLite checkpoint DB
+conn = sqlite3.connect("agent_checkpoints.db", check_same_thread=False)
+checkpointer = SqliteSaver(conn)
+app = build_graph(checkpointer=checkpointer)
 
-app = build_graph()
-
+config = {"configurable": {"thread_id": "test_run_2"}}  # naya id
 initial_state = {
     "messages": [],
     "user_request": "I need a summary of recent news about AI regulations, then write a 200-word brief for my CEO, and save it to a file.",
@@ -15,33 +23,49 @@ initial_state = {
     "current_task_assigned_to": None,
     "current_task_output": None,
     "review_feedback": None,
-    "current_task_retry_count": 0
+    "current_task_retry_count": 0,
+    "awaiting_human": False,
+    "escalation_reason": None,
+    "human_decision": None,
+    "human_feedback": None
 }
 
-final_state = app.invoke(initial_state)
+try:
+    final_state = app.invoke(initial_state, config)
+    print("Graph completed. Final state:")
+    print("Completed tasks:", list(final_state["completed_tasks"].keys()))
+except GraphInterrupt:
+    print("Graph paused for human approval! Run the Streamlit UI and then resume.")
+    # To resume later, run:
+    # app.invoke(None, config)
 
-print("\n=== Final Plan ===")
-if final_state["plan"]:
-    print("Goal:", final_state["plan"].overall_goal)
-    for st in final_state["plan"].subtasks:
-        status = "✅" if st.id in final_state["completed_tasks"] else "❌"
-        print(f"{status} {st.id}: {st.description} ({st.assigned_to})")
+print("\n=== DEBUG INFO ===")
+print("Plan:", final_state["plan"])
+print("Plan subtasks count:", len(final_state["plan"].subtasks) if final_state["plan"] else 0)
+print("Messages count:", len(final_state["messages"]))
+print("Last 3 messages:")
+for msg in final_state["messages"][-3:]:
+    print(msg)
+print("Current task ID:", final_state.get("current_task_id"))
+print("Current task output:", final_state.get("current_task_output"))
+print("Completed tasks:", final_state["completed_tasks"])
 
-print("\n=== Completed Tasks ===")
-for task_id, task_data in final_state["completed_tasks"].items():
-    print(f"Task {task_id}:")
-    print(task_data["output"][:200], "...")  # first 200 chars
+# Create tracer and attach to registry
+tracer = GraphTracer()
+registry.set_tracer(tracer)
 
-print("\nMessages count:", len(final_state["messages"]))
-print("Retry count:", final_state["retry_count"])
+# Config with callbacks
+config = {
+    "configurable": {"thread_id": "test_run_obs"},
+    "callbacks": [tracer]
+}
 
-# After graph invocation in test_orchestration.py:
-if final_state["plan"] and not final_state["validation_errors"]:
-    memory_manager.complete_task(
-        task_id="demo_task_1",  # generate a unique id
-        user_request=initial_state["user_request"],
-        plan_summary=str(final_state["plan"].overall_goal),
-        tools_used=["web_search"],
-        outcome="All tasks completed",
-        metadata={"retry_count": final_state["retry_count"]}
-    )
+# Run graph
+final_state = app.invoke(initial_state, config)
+
+# Print final state info...
+# Then print trace tree:
+rprint(tracer.get_tree())
+
+print("Full final state keys:", final_state.keys())
+print("Completed tasks:", final_state.get("completed_tasks"))

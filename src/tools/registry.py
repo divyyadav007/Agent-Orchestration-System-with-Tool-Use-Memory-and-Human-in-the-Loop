@@ -1,15 +1,12 @@
-# src/tools/registry.py
-
 from typing import Callable, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from datetime import datetime
-import json
 
 class ToolDefinition(BaseModel):
     name: str
     description: str
-    parameter_schema: Dict[str, Any]  # JSON Schema for parameters
-    function: Optional[Callable] = None  # will be set after registration
+    parameter_schema: Dict[str, Any]
+    function: Optional[Callable] = None
 
 class ToolInvocation(BaseModel):
     tool_name: str
@@ -19,15 +16,16 @@ class ToolInvocation(BaseModel):
     start_time: datetime = Field(default_factory=datetime.utcnow)
     end_time: Optional[datetime] = None
 
-
-
 class ToolRegistry:
     def __init__(self):
         self.tools: Dict[str, ToolDefinition] = {}
         self.invocation_log: list[ToolInvocation] = []
-    
+        self.tracer = None   # will be set externally
+
+    def set_tracer(self, tracer):
+        self.tracer = tracer
+
     def register(self, name: str, description: str, parameter_schema: Dict[str, Any]):
-        """Decorator to register a tool function."""
         def decorator(func: Callable):
             self.tools[name] = ToolDefinition(
                 name=name,
@@ -37,28 +35,28 @@ class ToolRegistry:
             )
             return func
         return decorator
-    
+
     def execute(self, tool_name: str, params: Dict[str, Any]) -> Any:
-        """Execute a registered tool by name with given parameters."""
         if tool_name not in self.tools:
             raise ValueError(f"Tool '{tool_name}' not registered.")
-        
         tool = self.tools[tool_name]
         invocation = ToolInvocation(tool_name=tool_name, params=params)
         self.invocation_log.append(invocation)
-        
+        start = datetime.utcnow()
         try:
             result = tool.function(**params)
             invocation.result = result
+            if self.tracer:
+                duration = (datetime.utcnow() - start).total_seconds() * 1000
+                self.tracer.add_tool_call(tool_name, params, result, duration)
             return result
         except Exception as e:
             invocation.error = str(e)
             raise
         finally:
             invocation.end_time = datetime.utcnow()
-    
+
     def get_tool_schemas(self) -> list[Dict[str, Any]]:
-        """Return list of tool descriptions in OpenAI function-calling format."""
         return [
             {
                 "type": "function",
@@ -70,6 +68,5 @@ class ToolRegistry:
             }
             for t in self.tools.values()
         ]
-    
-# Create a global registry instance
+
 registry = ToolRegistry()

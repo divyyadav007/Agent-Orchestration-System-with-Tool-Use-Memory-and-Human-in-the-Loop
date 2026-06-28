@@ -7,7 +7,6 @@ class LongTermMemory:
     def __init__(self):
         self.db_path = os.getenv("CHROMA_DB_PATH", "./chroma_data")
         self.client = chromadb.PersistentClient(path=self.db_path)
-        # Using local embedding function
         self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
             model_name="all-MiniLM-L6-v2"
         )
@@ -17,7 +16,7 @@ class LongTermMemory:
             metadata={"hnsw:space": "cosine"}
         )
     
-    def add_task(self, task_id: str, user_request: str, plan_summary: str, 
+    def add_task(self, task_id: str, user_request: str, plan_summary: str,
                  tools_used: List[str], outcome: str, metadata: Dict = None):
         documents = [f"Request: {user_request}\nPlan: {plan_summary}\nTools: {', '.join(tools_used)}\nOutcome: {outcome}"]
         meta = metadata or {}
@@ -34,7 +33,6 @@ class LongTermMemory:
             n_results=n_results,
             include=["documents", "metadatas", "distances"]
         )
-        # Structure results
         tasks = []
         for i, doc in enumerate(results["documents"][0]):
             tasks.append({
@@ -44,5 +42,4 @@ class LongTermMemory:
             })
         return tasks
 
-# Singleton
 long_term_memory = LongTermMemory()

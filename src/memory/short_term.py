@@ -21,5 +21,4 @@ class ShortTermMemory:
     def delete(self, task_id: str):
         self.client.delete(f"task:{task_id}")
 
-# Singleton
 short_term_memory = ShortTermMemory()

@@ -8,7 +8,6 @@ class MemoryManager:
         self.long = long_term_memory
     
     def get_context_for_planning(self, user_request: str) -> List[Dict]:
-        """Retrieve similar past tasks to help the supervisor plan better."""
         return self.long.search_similar(user_request, n_results=3)
     
     def save_task_state(self, task_id: str, state_snapshot: Dict[str, Any]):
@@ -19,10 +18,7 @@ class MemoryManager:
     
     def complete_task(self, task_id: str, user_request: str, plan_summary: str,
                      tools_used: List[str], outcome: str, metadata: Dict = None):
-        # Save to long-term memory for future
         self.long.add_task(task_id, user_request, plan_summary, tools_used, outcome, metadata)
-        # Optionally remove from short-term (or let TTL handle)
         self.short.delete(task_id)
 
-# Singleton
 memory_manager = MemoryManager()

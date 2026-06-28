@@ -4,7 +4,7 @@ from langchain_core.messages import BaseMessage
 from src.core.models import ExecutionPlan
 
 def merge_dicts(a: dict, b: dict) -> dict:
-    return {**a, **b}
+    return {**(a or {}), **(b or {})} 
 
 class WorkflowState(TypedDict):
     messages: Annotated[List[BaseMessage], operator.add]
