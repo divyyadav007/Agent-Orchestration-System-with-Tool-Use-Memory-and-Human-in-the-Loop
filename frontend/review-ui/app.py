@@ -152,6 +152,33 @@ if "human_required" not in st.session_state:
 if "paused_state" not in st.session_state:
     st.session_state.paused_state = None
 
+# ---------- Load active state from database on startup ----------
+if st.session_state.plan is None and st.session_state.final_state is None:
+    config = {"configurable": {"thread_id": thread_id}}
+    st.session_state.current_config = config
+    try:
+        state_snapshot = st.session_state.app.get_state(config)
+        if state_snapshot and state_snapshot.values:
+            st.session_state.plan = state_snapshot.values.get("plan")
+            st.session_state.completed_tasks = state_snapshot.values.get("completed_tasks", {})
+            
+            # Check if currently paused/interrupted
+            if state_snapshot.next:
+                interrupt_payload = {}
+                if state_snapshot.tasks and state_snapshot.tasks[0].interrupts:
+                    interrupt_payload = state_snapshot.tasks[0].interrupts[0].value
+                
+                st.session_state.paused_state = dict(state_snapshot.values)
+                if isinstance(interrupt_payload, dict):
+                    st.session_state.paused_state['escalation_reason'] = interrupt_payload.get("escalation_reason", "N/A")
+                
+                st.session_state.human_required = True
+            else:
+                st.session_state.human_required = False
+                st.session_state.final_state = state_snapshot.values
+    except Exception as e:
+        pass
+
 # ---------- Reset ----------
 if reset_btn:
     st.session_state.tracer.reset()
