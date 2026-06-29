@@ -99,6 +99,11 @@ streamlit run frontend/review-ui/app.py
 ```
 Then just open [http://localhost:8501](http://localhost:8501) in your browser and start giving tasks to the agents!
 
+**💡 Pro Tip: How to use the "Thread ID"**
+In the left sidebar, you will see a **Thread ID** box (it says `dashboard_run_1` by default). 
+- **What is it?** It acts like a "save slot" or a chat session. The AI uses this ID to remember everything that happens in that specific workflow.
+- **How to use it:** If you want to start a brand new, completely unrelated task but don't want to lose the history of your current one, just change the Thread ID (for example, to `my_new_task`). The AI will treat it as a fresh start with its own separate memory!
+
 ---
 
 ## 🐳 Docker (Optional)
