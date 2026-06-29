@@ -8,7 +8,7 @@ class SpecialistBase:
     def __init__(self, name: str, system_prompt: str, tools: List[str] = None):
         self.name = name
         self.system_prompt = system_prompt
-        self.tool_names = tools or list(registry.tools.keys())
+        self.tool_names = tools if tools is not None else list(registry.tools.keys())
         print("Registered tools:", list(registry.tools.keys()))
         self.tool_schemas = [
             schema for schema in registry.get_tool_schemas()
@@ -34,7 +34,7 @@ class SpecialistBase:
             return invoke_with_retry(llm, messages).content
 
         # Bind tools
-        llm_with_tools = llm.bind_tools(self.tool_schemas, tool_choice="any")
+        llm_with_tools = llm.bind_tools(self.tool_schemas, tool_choice="auto")
 
         for iteration in range(2):                    # max 2 tool-using turns
             try:

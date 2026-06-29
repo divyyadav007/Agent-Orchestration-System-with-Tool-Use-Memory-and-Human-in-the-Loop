@@ -7,7 +7,13 @@ class ShortTermMemory:
     def __init__(self):
         self.redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.ttl = int(os.getenv("REDIS_TTL", 3600))
-        self.client = redis.from_url(self.redis_url, decode_responses=True)
+        self._client = None
+    
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = redis.from_url(self.redis_url, decode_responses=True)
+        return self._client
     
     def save(self, task_id: str, data: Dict[str, Any]):
         key = f"task:{task_id}"

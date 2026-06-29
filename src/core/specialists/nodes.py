@@ -3,12 +3,14 @@ from src.core.state import WorkflowState
 from src.core.specialists.research import ResearchSpecialist
 from src.core.specialists.writing import WritingSpecialist
 from src.core.specialists.code import CodeSpecialist
+from src.core.specialists.data import DataSpecialist
 from src.core.specialists.base import SpecialistBase
 
 
 research_specialist = ResearchSpecialist()
 writing_specialist = WritingSpecialist()
 code_specialist = CodeSpecialist()
+data_specialist = DataSpecialist()
 
 def specialist_node(state: WorkflowState, specialist) -> dict:
     task_id = state["current_task_id"]
@@ -52,3 +54,6 @@ def writing_node(state: WorkflowState) -> dict:
 
 def code_node(state: WorkflowState) -> dict:
     return specialist_node(state, code_specialist)  
+
+def data_node(state: WorkflowState) -> dict:
+    return specialist_node(state, data_specialist)

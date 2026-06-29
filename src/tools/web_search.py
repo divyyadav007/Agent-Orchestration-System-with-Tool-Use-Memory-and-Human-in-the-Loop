@@ -24,12 +24,12 @@ def get_tavily_client():
         "type": "object",
         "properties": {
             "query": {"type": "string", "description": "Search query string"},
-            "max_results": {"type": "integer", "description": "Maximum results (max 5, default 3)", "default": 1}
+            "max_results": {"type": "integer", "description": "Maximum results (max 5, default 3)", "default": 5}
         },
         "required": ["query"]
     }
 )
-def web_search(query: str, max_results: int = 1) -> list:
+def web_search(query: str, max_results: int = 5) -> list:
     """
     Search the web using Tavily API and return a list of result dicts.
     """
@@ -44,6 +44,6 @@ def web_search(query: str, max_results: int = 1) -> list:
         results.append({
             "title": result.get("title", ""),
             "url": result.get("url", ""),
-            "snippet": "" # snippet as content
+            "snippet": snippet # snippet as content
         })
     return results

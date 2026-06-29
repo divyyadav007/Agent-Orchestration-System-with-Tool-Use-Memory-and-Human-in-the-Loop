@@ -3,7 +3,7 @@ from src.core.state import WorkflowState
 from src.core.supervisor import supervisor_node, validation_node
 from src.core.selector import selector_node
 from src.core.reviewer import reviewer_node
-from src.core.specialists.nodes import research_node, writing_node, code_node
+from src.core.specialists.nodes import research_node, writing_node, code_node, data_node
 from src.core.human_loop import escalation_node
 
 SPECIALIST_NODE_MAP = {
@@ -21,6 +21,7 @@ def build_graph(checkpointer=None):
     builder.add_node("research_specialist", research_node)
     builder.add_node("writing_specialist", writing_node)
     builder.add_node("code_specialist", code_node)
+    builder.add_node("data_specialist", data_node)
     builder.add_node("reviewer", reviewer_node)
     builder.add_node("escalation", escalation_node)
 
@@ -48,12 +49,14 @@ def build_graph(checkpointer=None):
         "research_specialist": "research_specialist",
         "writing_specialist": "writing_specialist",
         "code_specialist": "code_specialist",
+        "data_specialist": "data_specialist",
         END: END
     })
 
     builder.add_edge("research_specialist", "reviewer")
     builder.add_edge("writing_specialist", "reviewer")
     builder.add_edge("code_specialist", "reviewer")
+    builder.add_edge("data_specialist", "reviewer")
 
     def after_reviewer(state: WorkflowState) -> str:
         task_id = state.get("current_task_id")
@@ -69,6 +72,7 @@ def build_graph(checkpointer=None):
         "research_specialist": "research_specialist",
         "writing_specialist": "writing_specialist",
         "code_specialist": "code_specialist",
+        "data_specialist": "data_specialist",
         "selector": "selector",
         "escalation": "escalation",
         END: END

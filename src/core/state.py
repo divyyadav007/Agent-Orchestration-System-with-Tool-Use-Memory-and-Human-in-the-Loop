@@ -23,3 +23,5 @@ class WorkflowState(TypedDict):
     escalation_reason: Optional[str]        # Why escalation happened
     human_decision: Optional[str]           # "approve", "reject", "modify"
     human_feedback: Optional[str]           # Optional instructions from human
+    memory_context: Optional[str]           # Context retrieved from long-term memory
+    force_human_review: bool                # True to force human review on every task

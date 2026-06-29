@@ -42,7 +42,7 @@ class ResearchSpecialist(SpecialistBase):
 
         # Step 2: Directly execute the web search tool
         try:
-            search_result = registry.execute("web_search", {"query": query})
+            search_result = registry.execute("web_search", {"query": query, "max_results": 5})
         except Exception as e:
             return f"Error executing web search: {e}"
 

@@ -15,14 +15,6 @@ sentence-transformers>=2.2.0 # Local embeddings (all-MiniLM-L6-v2)
 psycopg2-binary>=2.9         # PostgreSQL client (optional for memory/observability)
 
 # ============================================================
-# API & Background Tasks
-# ============================================================
-fastapi>=0.110.0             # API server for human-in-the-loop endpoints
-uvicorn[standard]>=0.27.0    # ASGI server
-celery>=5.3.0                # Distributed task queue (for async tool execution)
-redis>=5.0                   # Celery broker (same Redis instance)  <-- just keep this line if you want clarity, but it's already above
-
-# ============================================================
 # Human Review UI (Phase 3)
 # ============================================================
 streamlit>=1.30.0            # Minimal review dashboard
@@ -58,3 +50,5 @@ mypy>=1.8                    # Type checker
 
 tavily-python
 langchain
+torchvision
+fpdf2

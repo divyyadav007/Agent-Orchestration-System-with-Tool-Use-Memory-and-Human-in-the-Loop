@@ -1,3 +1,7 @@
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 import sqlite3
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.errors import GraphInterrupt
@@ -10,7 +14,7 @@ conn = sqlite3.connect("agent_checkpoints.db", check_same_thread=False)
 checkpointer = SqliteSaver(conn)
 app = build_graph(checkpointer=checkpointer)
 
-config = {"configurable": {"thread_id": "test_run_2"}}  # naya id
+config = {"configurable": {"thread_id": "test_run_fresh_unique_12"}}  # fresh thread id
 initial_state = {
     "messages": [],
     "user_request": "I need a summary of recent news about AI regulations, then write a 200-word brief for my CEO, and save it to a file.",
@@ -30,42 +34,50 @@ initial_state = {
     "human_feedback": None
 }
 
-try:
-    final_state = app.invoke(initial_state, config)
-    print("Graph completed. Final state:")
-    print("Completed tasks:", list(final_state["completed_tasks"].keys()))
-except GraphInterrupt:
-    print("Graph paused for human approval! Run the Streamlit UI and then resume.")
-    # To resume later, run:
-    # app.invoke(None, config)
+if __name__ == "__main__":
+    try:
+        final_state = app.invoke(initial_state, config)
+        print("Graph completed. Final state:")
+        print("Completed tasks:", list(final_state["completed_tasks"].keys()))
+    except GraphInterrupt:
+        print("Graph paused for human approval! Run the Streamlit UI and then resume.")
+        final_state = app.get_state(config).values
+        # To resume later, run:
+        # app.invoke(None, config)
 
-print("\n=== DEBUG INFO ===")
-print("Plan:", final_state["plan"])
-print("Plan subtasks count:", len(final_state["plan"].subtasks) if final_state["plan"] else 0)
-print("Messages count:", len(final_state["messages"]))
-print("Last 3 messages:")
-for msg in final_state["messages"][-3:]:
-    print(msg)
-print("Current task ID:", final_state.get("current_task_id"))
-print("Current task output:", final_state.get("current_task_output"))
-print("Completed tasks:", final_state["completed_tasks"])
+    print("\n=== DEBUG INFO ===")
+    print("Plan:", final_state.get("plan"))
+    print("Plan subtasks count:", len(final_state["plan"].subtasks) if final_state.get("plan") else 0)
+    print("Messages count:", len(final_state.get("messages", [])))
+    print("Last 3 messages:")
+    for msg in final_state.get("messages", [])[-3:]:
+        print(msg)
+    print("Current task ID:", final_state.get("current_task_id"))
+    print("Current task output:", final_state.get("current_task_output"))
+    print("Completed tasks:")
+    for k, v in final_state.get("completed_tasks", {}).items():
+        print(f"Task {k}: {str(v.get('output'))[:100]}...")
 
-# Create tracer and attach to registry
-tracer = GraphTracer()
-registry.set_tracer(tracer)
+    # Create tracer and attach to registry
+    tracer = GraphTracer()
+    registry.set_tracer(tracer)
 
-# Config with callbacks
-config = {
-    "configurable": {"thread_id": "test_run_obs"},
-    "callbacks": [tracer]
-}
+    # Config with callbacks
+    config = {
+        "configurable": {"thread_id": "test_run_obs_fresh_12"},
+        "callbacks": [tracer]
+    }
 
-# Run graph
-final_state = app.invoke(initial_state, config)
+    # Run graph
+    try:
+        final_state = app.invoke(initial_state, config)
+    except GraphInterrupt:
+        print("Graph paused for human approval during traced execution!")
+        final_state = app.get_state(config).values
 
-# Print final state info...
-# Then print trace tree:
-rprint(tracer.get_tree())
+    # Print final state info...
+    # Then print trace tree:
+    rprint(tracer.get_tree())
 
-print("Full final state keys:", final_state.keys())
-print("Completed tasks:", final_state.get("completed_tasks"))
+    print("Full final state keys:", final_state.keys())
+    print("Completed tasks:", final_state.get("completed_tasks"))

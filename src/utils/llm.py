@@ -14,7 +14,7 @@ def invoke_with_retry(llm, messages, max_retries=3):
             if attempt == max_retries - 1:
                 raise
             wait = 5 * (attempt + 1)
-            print(f"⏳ Rate limited, retrying in {wait}s...")
+            print(f"Rate limited, retrying in {wait}s...")
             time.sleep(wait)
 
 def get_llm(model_name: str = None, temperature: float = 0.0):

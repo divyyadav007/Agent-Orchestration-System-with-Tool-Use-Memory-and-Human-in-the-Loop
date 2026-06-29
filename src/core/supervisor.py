@@ -80,7 +80,11 @@ def supervisor_node(state: WorkflowState) -> dict:
     
     # ... inside supervisor_node ...
     plan = invoke_with_retry(structured_llm, messages)
-    return {"plan": plan, "retry_count": state.get("retry_count", 0) + 1}
+    return {
+        "plan": plan, 
+        "retry_count": state.get("retry_count", 0) + 1,
+        "memory_context": memory_context
+    }
 
 def validation_node(state: WorkflowState) -> dict:
     plan = state["plan"]

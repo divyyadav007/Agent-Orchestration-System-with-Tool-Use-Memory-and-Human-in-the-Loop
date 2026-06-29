@@ -28,29 +28,10 @@ def reviewer_node(state: WorkflowState) -> dict:
         return {}
     expected_type = subtask.expected_output_type if subtask else "text"
 
-    output_text = output_str[:150] + "..." if len(output_str) > 150 else output_str
+    output_text = output_str
 
     retry_count = state.get("current_task_retry_count", 0)
     max_retries = 2
-
-    # If we've already retried enough, accept the output without further review
-    if retry_count >= max_retries - 1:
-        print(f"DEBUG reviewer: max retries reached for task {task_id}, accepting output.")
-        new_completed = dict(state.get("completed_tasks", {}))
-        new_completed[task_id] = {
-            "output": output_str,
-            "assigned_to": state["current_task_assigned_to"],
-            "review_score": 0.5,          # forced accept
-            "passed": True
-        }
-        return {
-            "completed_tasks": new_completed,
-            "current_task_id": None,
-            "current_task_output": None,
-            "review_feedback": None,
-            "current_task_retry_count": 0,
-            "messages": [{"role": "system", "content": f"Task {task_id} auto‑accepted after max retries."}]
-        }
 
     # Otherwise, evaluate normally
     llm = get_llm(temperature=0)
@@ -95,7 +76,7 @@ Return ONLY valid JSON with score, feedback, passes.""")
             "messages": [{"role": "system", "content": f"Task {task_id} reviewed, score={review.score}"}]
         }
     else:
-        print(f"DEBUG reviewer: task {task_id} failed, retry {retry_count+1}/{max_retries}")
+        print(f"DEBUG reviewer: task {task_id} failed, retry {retry_count+1}/{max_retries}, score={review.score}, feedback='{review.feedback}'")
         return {
             "review_feedback": review.feedback,
             "current_task_retry_count": retry_count + 1
