@@ -297,8 +297,9 @@ if st.session_state.human_required and st.session_state.paused_state:
             try:
                 # Update state using LangGraph API
                 app.update_state(config, {"human_decision": "approve"})
-                # Resume graph
-                resumed_state = app.invoke(None, config)
+                # Resume graph with spinner
+                with st.spinner("🔄 Resuming workflow with approval..."):
+                    resumed_state = app.invoke(None, config)
                 
                 state_snapshot = app.get_state(config)
                 if state_snapshot and state_snapshot.next:
@@ -343,8 +344,9 @@ if st.session_state.human_required and st.session_state.paused_state:
             try:
                 # Update state using LangGraph API
                 app.update_state(config, {"human_decision": "reject"})
-                # Resume graph
-                resumed_state = app.invoke(None, config)
+                # Resume graph with spinner
+                with st.spinner("🔄 Resuming workflow with rejection..."):
+                    resumed_state = app.invoke(None, config)
                 st.session_state.final_state = resumed_state
                 st.session_state.plan = resumed_state.get("plan")
                 st.session_state.completed_tasks = resumed_state.get("completed_tasks", {})
@@ -429,7 +431,7 @@ if st.session_state.completed_tasks:
                             pdf.set_font("Helvetica", size=11)
                             # Handle utf-8 characters encoding gracefully
                             pdf.multi_cell(0, 10, content.encode('latin-1', 'replace').decode('latin-1'))
-                            pdf_bytes = pdf.output(dest='S')
+                            pdf_bytes = bytes(pdf.output())
                             
                             st.download_button(
                                 label=f"⬇️ Download PDF",
