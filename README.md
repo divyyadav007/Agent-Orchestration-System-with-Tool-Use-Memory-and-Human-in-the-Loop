@@ -1,3 +1,13 @@
+---
+title: Agent Orchestration System
+emoji: 🤖
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🤖 Agent Orchestration System
 
 An advanced, multi-agent orchestration framework built with **LangGraph** featuring hierarchical task planning, structured outputs, self-correcting reviewer loops, human-in-the-loop escalation, vector memory integration, and a premium observability dashboard.
