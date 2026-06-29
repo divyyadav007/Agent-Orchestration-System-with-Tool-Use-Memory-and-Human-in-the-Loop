@@ -17,7 +17,7 @@ def escalation_node(state: WorkflowState) -> dict:
         new_completed[task_id] = {
             "output": state.get("current_task_output", ""),
             "assigned_to": state["current_task_assigned_to"],
-            "review_score": 0.0,
+            "review_score": 1.0,
             "passed": True,
             "human_approved": True
         }

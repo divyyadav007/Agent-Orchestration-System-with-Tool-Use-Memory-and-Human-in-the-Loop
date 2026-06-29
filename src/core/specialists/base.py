@@ -23,10 +23,9 @@ class SpecialistBase:
             HumanMessage(content=task_description)
         ]
         if previous_outputs:
-            context = "Previous subtask outputs:"
+            context = "Previous subtask outputs:\n"
             for dep_id, output in previous_outputs.items():
-                truncated = output[:100] + "..." if len(output) > 100 else output
-                context += f"Subtask {dep_id}: {truncated}"
+                context += f"Subtask {dep_id}:\n{output}\n\n"
             messages.append(HumanMessage(content=context))
 
         # If no tools, just call LLM once with retry
