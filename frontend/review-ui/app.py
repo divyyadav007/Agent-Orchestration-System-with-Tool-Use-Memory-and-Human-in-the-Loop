@@ -239,12 +239,28 @@ if run_btn and user_request.strip():
         with st.spinner("🔄 Running agent workflow..."):
             final_state = st.session_state.app.invoke(initial_state, config)  # invoke easier for display
             
-        st.session_state.final_state = final_state
-        st.session_state.plan = final_state.get("plan")
-        st.session_state.completed_tasks = final_state.get("completed_tasks", {})
-        st.session_state.human_required = False
-        st.success("✅ Workflow completed!")
-        st.rerun()
+        state_snapshot = st.session_state.app.get_state(config)
+        if state_snapshot and state_snapshot.next:
+            interrupt_payload = {}
+            if state_snapshot.tasks and state_snapshot.tasks[0].interrupts:
+                interrupt_payload = state_snapshot.tasks[0].interrupts[0].value
+            
+            st.session_state.paused_state = dict(state_snapshot.values)
+            if isinstance(interrupt_payload, dict):
+                st.session_state.paused_state['escalation_reason'] = interrupt_payload.get("escalation_reason", "N/A")
+            
+            st.session_state.human_required = True
+            st.session_state.final_state = state_snapshot.values
+            st.session_state.plan = state_snapshot.values.get("plan")
+            st.session_state.completed_tasks = state_snapshot.values.get("completed_tasks", {})
+            st.rerun()
+        else:
+            st.session_state.final_state = final_state
+            st.session_state.plan = final_state.get("plan")
+            st.session_state.completed_tasks = final_state.get("completed_tasks", {})
+            st.session_state.human_required = False
+            st.success("✅ Workflow completed!")
+            st.rerun()
     except GraphInterrupt:
         state_snapshot = st.session_state.app.get_state(config)
         if state_snapshot and state_snapshot.next:
@@ -283,12 +299,27 @@ if st.session_state.human_required and st.session_state.paused_state:
                 app.update_state(config, {"human_decision": "approve"})
                 # Resume graph
                 resumed_state = app.invoke(None, config)
-                st.session_state.final_state = resumed_state
-                st.session_state.plan = resumed_state.get("plan")
-                st.session_state.completed_tasks = resumed_state.get("completed_tasks", {})
-                st.session_state.human_required = False
-                st.success("Approved and workflow resumed.")
-                st.rerun()
+                
+                state_snapshot = app.get_state(config)
+                if state_snapshot and state_snapshot.next:
+                    interrupt_payload = {}
+                    if state_snapshot.tasks and state_snapshot.tasks[0].interrupts:
+                        interrupt_payload = state_snapshot.tasks[0].interrupts[0].value
+                    st.session_state.paused_state = dict(state_snapshot.values)
+                    if isinstance(interrupt_payload, dict):
+                        st.session_state.paused_state['escalation_reason'] = interrupt_payload.get("escalation_reason", "N/A")
+                    st.session_state.human_required = True
+                    st.session_state.final_state = state_snapshot.values
+                    st.session_state.plan = state_snapshot.values.get("plan")
+                    st.session_state.completed_tasks = state_snapshot.values.get("completed_tasks", {})
+                    st.rerun()
+                else:
+                    st.session_state.final_state = resumed_state
+                    st.session_state.plan = resumed_state.get("plan")
+                    st.session_state.completed_tasks = resumed_state.get("completed_tasks", {})
+                    st.session_state.human_required = False
+                    st.success("Approved and workflow resumed.")
+                    st.rerun()
             except GraphInterrupt:
                 state_snapshot = app.get_state(config)
                 if state_snapshot and state_snapshot.next:
