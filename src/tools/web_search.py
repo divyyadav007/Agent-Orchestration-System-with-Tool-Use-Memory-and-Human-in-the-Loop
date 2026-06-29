@@ -39,8 +39,8 @@ def web_search(query: str, max_results: int = 5) -> list:
     results = []
     for result in response.get("results", []):
         snippet = result.get("content", "")
-        if len(snippet) > 100:
-            snippet = snippet[:100] + "..."
+        if len(snippet) > 1000:
+            snippet = snippet[:1000] + "..."
         results.append({
             "title": result.get("title", ""),
             "url": result.get("url", ""),
