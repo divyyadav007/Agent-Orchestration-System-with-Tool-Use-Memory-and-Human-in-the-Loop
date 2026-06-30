@@ -19,5 +19,5 @@ COPY . .
 
 EXPOSE 7860
 
-# Run the Streamlit frontend app
-CMD ["streamlit", "run", "frontend/review-ui/app.py", "--server.port=7860", "--server.address=0.0.0.0"]
+# Run the Streamlit frontend app using dynamic port binding and disabling CORS/XSRF for proxy routing compatibility
+CMD ["sh", "-c", "streamlit run frontend/review-ui/app.py --server.port=${PORT:-7860} --server.address=0.0.0.0 --server.enableCORS=false --server.enableXsrfProtection=false --browser.gatherUsageStats=false"]
