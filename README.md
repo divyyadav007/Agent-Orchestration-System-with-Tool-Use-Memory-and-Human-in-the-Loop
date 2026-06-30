@@ -235,12 +235,7 @@ python -m tests.test_research
 ## 📂 Project Structure
 
 ```text
-├── .github/                       # GitHub Templates & CI/CD Pipelines
-│   ├── ISSUE_TEMPLATE/            # Templates for bug reports and feature requests
-│   │   ├── bug_report.md
-│   │   └── feature_request.md
-│   ├── PULL_REQUEST_TEMPLATE.md   # Standard checklist for pull requests
-│   ├── CODEOWNERS                 # Assigns code review responsibility
+├── .github/                       # GitHub Workflows & CI/CD Pipelines
 │   └── workflows/                 # CI Linting and testing pipelines
 │       ├── lint.yml
 │       └── test.yml
@@ -337,12 +332,6 @@ Initializes a chat client pointing to the Groq API gateway:
 - [ ] **Parallel Specialist Execution:** Support multi-threading in selector nodes to trigger independent tasks concurrently.
 - [ ] **Local LLM Integration:** Add configurations to run Ollama for offline execution.
 - [ ] **Advanced Cost & Token Tracking:** Integrate pricing trackers for usage dashboards.
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please review our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting pull requests.
 
 ---
 

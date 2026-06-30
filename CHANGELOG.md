@@ -9,9 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - GitHub actions CI workflows for automated linting and unit testing.
-- Community templates: `CODEOWNERS`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`.
-- Structured issue templates for bug reporting and feature requests.
-- MIT open source software `LICENSE`.
+- Project setup configurations: MIT `LICENSE`, `pyproject.toml`, and `.gitignore`.
 
 ### Changed
 - Refactored entire Python codebase to integrate standardized hierarchical `logging` instead of raw print statement outputs.
