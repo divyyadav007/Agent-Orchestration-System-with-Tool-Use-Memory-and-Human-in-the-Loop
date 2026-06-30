@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-orchestration-system"
+version = "1.0.0"
+description = "A stateful multi-agent system with supervisor, specialists, reviewer, and human-in-the-loop validation using LangGraph."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Divy Yadav", email = "divyyadav.dev@gmail.com"}
+]
+keywords = ["agent", "langgraph", "multi-agent", "human-in-the-loop", "openai", "groq", "vector-database", "chromadb"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "langgraph>=0.2.0",
+    "langgraph-checkpoint-sqlite",
+    "langchain-core>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "pydantic>=2.0",
+    "redis>=5.0",
+    "chromadb>=0.5.0",
+    "sentence-transformers>=2.2.0",
+    "streamlit>=1.30.0",
+    "rich>=13.0",
+    "python-dotenv>=1.0",
+    "tavily-python",
+    "fpdf2"
+]
+
+[tool.black]
+line-length = 127
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 127
+multi_line_output = 3
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"

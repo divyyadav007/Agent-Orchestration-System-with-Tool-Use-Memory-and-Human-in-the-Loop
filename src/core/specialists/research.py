@@ -1,8 +1,12 @@
-# src/core/specialists/research.py
+import logging
+from typing import Dict, Any, Optional
 from src.core.specialists.base import SpecialistBase
 from src.utils.llm import get_llm, invoke_with_retry
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.tools import registry
+
+# Initialize module logger
+logger = logging.getLogger(__name__)
 
 RESEARCH_SYSTEM_PROMPT = """You are a research specialist. You have access to a 'web_search' tool that returns web search results with titles, URLs, and content snippets.
 
@@ -22,14 +26,30 @@ You must:
 """
 
 class ResearchSpecialist(SpecialistBase):
-    def __init__(self):
+    """Specialist agent specialized in querying the web and parsing findings into structured JSON."""
+    
+    def __init__(self) -> None:
         super().__init__(
             name="research",
             system_prompt=RESEARCH_SYSTEM_PROMPT,
-            tools=["web_search"]  # only web_search tool for now
+            tools=["web_search"]
         )
 
-    def execute_task(self, task_description: str, previous_outputs: dict = None) -> str:
+    def execute_task(self, task_description: str, previous_outputs: Optional[Dict[str, Any]] = None) -> str:
+        """Executes the research subtask.
+        
+        Generates a targeted web search query, invokes the search engine,
+        and requests formatting of the outcomes into a JSON array structure.
+
+        Args:
+            task_description (str): Description detailing search topics.
+            previous_outputs (Optional[Dict[str, Any]]): Outputs from previous task executions.
+
+        Returns:
+            str: Valid JSON array representation of search results.
+        """
+        logger.info(f"[{self.name}] Initiating research: '{task_description[:80]}...'")
+        
         # Step 1: Generate a targeted search query from the task description
         query_gen_messages = [
             SystemMessage(content="You are an expert at creating web search queries."),
@@ -38,12 +58,13 @@ class ResearchSpecialist(SpecialistBase):
         query_gen_llm = get_llm(temperature=0)
         query_response = invoke_with_retry(query_gen_llm, query_gen_messages)
         query = query_response.content.strip().strip('"')
-        print(f"DEBUG researcher: generated query: '{query}'")
+        logger.debug(f"[{self.name}] Generated search query: '{query}'")
 
         # Step 2: Directly execute the web search tool
         try:
             search_result = registry.execute("web_search", {"query": query, "max_results": 5})
         except Exception as e:
+            logger.error(f"[{self.name}] Web search tool failure: {e}", exc_info=True)
             return f"Error executing web search: {e}"
 
         # Step 3: Pass the results to the LLM to format into the required JSON
@@ -55,4 +76,5 @@ class ResearchSpecialist(SpecialistBase):
         formatting_llm = get_llm(temperature=0).bind_tools([], tool_choice="none")
         final_response = invoke_with_retry(formatting_llm, formatting_messages)
         
+        logger.info(f"[{self.name}] Research formatting completed.")
         return final_response.content
