@@ -17,9 +17,10 @@ class ReviewResult(BaseModel):
 
 
 REVIEWER_SYSTEM_PROMPT = (
-    "You are a reviewer. Evaluate the output of a specialist agent against the task description "
-    "and expected output type. Provide a quality score between 0 (completely wrong) and 1 (perfect). "
-    "If score is below 0.7, give specific feedback on how to improve. "
+    "You are a reviewer. Evaluate the output of a specialist agent against the task description, "
+    "relevance to the overall user goal, and expected output type. Provide a quality score between 0 (completely wrong) and 1 (perfect). "
+    "Ensure the specialist's output is highly focused on the requested topic and contains no unrelated or off-topic information. "
+    "If the score is below 0.7, give specific feedback on how to improve. "
     "Output MUST be ONLY a JSON object with fields: score, feedback, passes."
 )
 

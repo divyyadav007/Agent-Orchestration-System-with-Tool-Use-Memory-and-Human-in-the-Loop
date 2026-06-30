@@ -14,7 +14,8 @@ Your task is to find recent news articles based on the user's request.
 
 You must:
 - Use the web_search tool to find relevant articles.
-- For each article, extract the URL, title, and a brief excerpt or summary.
+- STRICT TOPIC FILTERING: Extract information that is DIRECTLY relevant to the specific topic requested. If the search results contain general daily news wraps or summary pages with multiple unrelated headlines (e.g., world news, sports, earthquakes, other political issues), you MUST ignore the unrelated topics and ONLY extract the elements concerning the requested topic.
+- For each relevant article, extract the URL, title, and a brief excerpt or summary focusing ONLY on the requested topic.
 - Output a valid JSON array of objects, where each object has the keys "url", "title", and "excerpt".
 - Example format:
   [
@@ -22,7 +23,7 @@ You must:
     {"url": "https://example.com/article2", "title": "Article Title 2", "excerpt": "Another brief summary..."}
   ]
 - Do NOT include any other text, markdown, or explanation before or after the JSON array.
-- If the search tool returns no relevant results, output an empty array: []
+- If the search tool returns no relevant results for the requested topic, output an empty array: []
 """
 
 class ResearchSpecialist(SpecialistBase):
