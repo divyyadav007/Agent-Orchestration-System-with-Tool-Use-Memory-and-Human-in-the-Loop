@@ -10,20 +10,23 @@ echo "📦 Updating system packages..."
 sudo apt-get update -y
 sudo apt-get upgrade -y
 
-# 2. Install Docker & Docker Compose if not present
-if ! command -v docker &> /devnull; then
+# 2. Fix potential package conflict if docker-compose-v2 exists
+sudo apt-get remove -y docker-compose-v2 docker-compose 2>/dev/null || true
+
+# 3. Install Docker & Docker Compose Plugin if not present
+if ! command -v docker &> /dev/null; then
     echo "🐳 Installing Docker..."
     sudo apt-get install -y ca-certificates curl gnupg lsb-release
     sudo mkdir -p /etc/apt/keyrings
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     sudo apt-get update -y
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-compose
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     sudo usermod -aG docker $USER
     echo "✅ Docker installed successfully."
 fi
 
-# 3. Create .env file if it doesn't exist
+# 4. Create .env file if it doesn't exist
 if [ ! -f .env ]; then
     echo "⚠️  .env file not found. Copying .env.example..."
     cp .env.example .env
@@ -34,9 +37,13 @@ fi
 PORT=$(grep -E '^HOST_PORT=' .env | cut -d '=' -f2 | tr -d '"' | tr -d "'" || echo "8502")
 PORT=${PORT:-8502}
 
-# 4. Build and run Docker containers
+# 5. Build and run Docker containers using 'docker compose' or 'docker-compose'
 echo "🛠️ Building and starting container services via Docker Compose on Port ${PORT}..."
-docker-compose up --build -d
+if docker compose version &> /dev/null; then
+    docker compose up --build -d
+else
+    docker-compose up --build -d
+fi
 
 echo "🎉 Deployment Complete!"
 echo "🌐 App is accessible at: http://$(curl -s ifconfig.me):${PORT}"
