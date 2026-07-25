@@ -5,19 +5,19 @@ set -e
 
 echo "🚀 Starting AOS Setup on AWS EC2..."
 
-# 1. Force purge conflicting Ubuntu docker-compose packages if present
-sudo dpkg --purge --force-all docker-compose-v2 docker-compose 2>/dev/null || true
+# 1. Clean cached conflicting deb packages if any
+sudo rm -f /var/cache/apt/archives/docker-compose-v2*.deb 2>/dev/null || true
 
 # 2. Install Docker & Docker Compose Plugin if not present
 if ! command -v docker &> /dev/null; then
     echo "🐳 Installing Docker..."
     sudo apt-get update -y
-    sudo apt-get install -y ca-certificates curl gnupg lsb-release
+    sudo apt-get install -y -o Dpkg::Options::="--force-overwrite" ca-certificates curl gnupg lsb-release
     sudo mkdir -p /etc/apt/keyrings
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     sudo apt-get update -y
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    sudo apt-get install -y -o Dpkg::Options::="--force-overwrite" docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     sudo usermod -aG docker $USER
     echo "✅ Docker installed successfully."
 fi
@@ -37,8 +37,10 @@ PORT=${PORT:-8502}
 echo "🛠️ Building and starting container services via Docker Compose on Port ${PORT}..."
 if docker compose version &> /dev/null; then
     docker compose up --build -d
-else
+elif docker-compose version &> /dev/null; then
     docker-compose up --build -d
+else
+    sudo docker compose up --build -d
 fi
 
 echo "🎉 Deployment Complete!"
