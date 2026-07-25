@@ -5,17 +5,13 @@ set -e
 
 echo "🚀 Starting AOS Setup on AWS EC2..."
 
-# 1. Update system packages
-echo "📦 Updating system packages..."
-sudo apt-get update -y
-sudo apt-get upgrade -y
+# 1. Force purge conflicting Ubuntu docker-compose packages if present
+sudo dpkg --purge --force-all docker-compose-v2 docker-compose 2>/dev/null || true
 
-# 2. Fix potential package conflict if docker-compose-v2 exists
-sudo apt-get remove -y docker-compose-v2 docker-compose 2>/dev/null || true
-
-# 3. Install Docker & Docker Compose Plugin if not present
+# 2. Install Docker & Docker Compose Plugin if not present
 if ! command -v docker &> /dev/null; then
     echo "🐳 Installing Docker..."
+    sudo apt-get update -y
     sudo apt-get install -y ca-certificates curl gnupg lsb-release
     sudo mkdir -p /etc/apt/keyrings
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
@@ -26,7 +22,7 @@ if ! command -v docker &> /dev/null; then
     echo "✅ Docker installed successfully."
 fi
 
-# 4. Create .env file if it doesn't exist
+# 3. Create .env file if it doesn't exist
 if [ ! -f .env ]; then
     echo "⚠️  .env file not found. Copying .env.example..."
     cp .env.example .env
@@ -37,7 +33,7 @@ fi
 PORT=$(grep -E '^HOST_PORT=' .env | cut -d '=' -f2 | tr -d '"' | tr -d "'" || echo "8502")
 PORT=${PORT:-8502}
 
-# 5. Build and run Docker containers using 'docker compose' or 'docker-compose'
+# 4. Build and run Docker containers using 'docker compose' or 'docker-compose'
 echo "🛠️ Building and starting container services via Docker Compose on Port ${PORT}..."
 if docker compose version &> /dev/null; then
     docker compose up --build -d
