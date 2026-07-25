@@ -3,65 +3,60 @@ from typing import Dict, Any
 from langgraph.types import interrupt
 from src.core.state import WorkflowState
 
-# Initialize module logger
 logger = logging.getLogger(__name__)
 
+
 def escalation_node(state: WorkflowState) -> Dict[str, Any]:
-    """LangGraph node representing the human-in-the-loop validation checkpoint.
-
-    If a specialist's output fails review multiple times, this node pauses the
-    workflow using LangGraph `interrupt`, waiting for external approval or rejection.
-
-    Args:
-        state (WorkflowState): Current global graph state.
-
-    Returns:
-        Dict[str, Any]: State updates with the resolved decision and completed task index.
+    """LangGraph Escalation Node: Human-in-the-Loop (HITL) Checkpoint.
+    
+    Why interrupt() is used: When a task fails automated quality review 2+ times, 
+    LangGraph's interrupt() function halts graph execution, saves state to the database, 
+    and returns control to the UI. The UI presents an Approve/Reject form to the human operator.
+    When the human submits a decision, execution resumes from this exact checkpoint.
     """
-    task_id = state["current_task_id"]
+    task_id = state.get("current_task_id")
     if not task_id:
-        logger.warning("Escalation node executed but no active task_id was found.")
+        logger.warning("Escalation node: No active task_id found.")
         return {}
 
+    # Step 1: If no decision has been provided by the human yet, trigger LangGraph interrupt
     if not state.get("human_decision"):
         retry_count = state.get("current_task_retry_count", 0)
-        reason = (
-            f"Task {task_id} failed after {retry_count} retries. "
-            f"Output snippet: {state.get('current_task_output', '')[:200]}..."
-        )
-        logger.info(f"Escalating task '{task_id}' to human loop. Reason: {reason}")
-        
-        # This function call halts execution and yields back to client/checkpointer
+        output_snippet = str(state.get("current_task_output", ""))[:200]
+        reason = f"Task {task_id} failed after {retry_count} retries. Snippet: {output_snippet}..."
+        logger.info(f"Escalating task '{task_id}' to Human-in-the-Loop. Reason: {reason}")
+
+        # Yield execution interrupt payload back to Streamlit dashboard
         interrupt({
             "awaiting_human": True,
             "escalation_reason": reason
         })
-    
+
+    # Step 2: Human decision has been submitted, process decision
     decision = state.get("human_decision")
-    logger.info(f"Escalation node: Human decision received: '{decision}' for task '{task_id}'")
-    
-    new_completed = dict(state.get("completed_tasks", {}))
+    logger.info(f"Escalation node: Applying human decision '{decision}' for subtask '{task_id}'")
+
+    completed = dict(state.get("completed_tasks", {}))
     if decision == "approve":
-        new_completed[task_id] = {
+        completed[task_id] = {
             "output": state.get("current_task_output", ""),
-            "assigned_to": state["current_task_assigned_to"],
+            "assigned_to": state.get("current_task_assigned_to"),
             "review_score": 1.0,
             "passed": True,
             "human_approved": True
         }
     elif decision == "reject":
-        new_completed[task_id] = {
+        completed[task_id] = {
             "output": "REJECTED BY HUMAN",
-            "assigned_to": state["current_task_assigned_to"],
+            "assigned_to": state.get("current_task_assigned_to"),
             "passed": False,
             "human_rejected": True
         }
     else:
-        logger.warning(f"Escalation node: Unknown or empty human decision: '{decision}'")
-        pass
-    
+        logger.warning(f"Escalation node: Unrecognized decision '{decision}'.")
+
     return {
-        "completed_tasks": new_completed,
+        "completed_tasks": completed,
         "current_task_id": None,
         "current_task_output": None,
         "review_feedback": None,
@@ -69,4 +64,4 @@ def escalation_node(state: WorkflowState) -> Dict[str, Any]:
         "awaiting_human": False,
         "human_decision": None,
         "messages": [{"role": "system", "content": f"Human decision '{decision}' applied to task {task_id}"}]
-    }
+    }

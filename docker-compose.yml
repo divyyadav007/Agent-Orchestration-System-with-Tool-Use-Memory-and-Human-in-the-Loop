@@ -5,7 +5,7 @@ services:
     build: .
     container_name: agent_orchestrator_ui
     ports:
-      - "8501:7860"
+      - "${HOST_PORT:-8502}:8501"
     volumes:
       - .:/app
       - chroma_data:/app/chroma_data
@@ -16,14 +16,14 @@ services:
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       - redis
-    restart: unless-stopped
+    restart: always
 
   redis:
     image: redis:7-alpine
     container_name: agent_orchestrator_redis
     ports:
       - "6379:6379"
-    restart: unless-stopped
+    restart: always
 
 volumes:
   chroma_data:

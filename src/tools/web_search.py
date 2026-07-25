@@ -5,44 +5,40 @@ from dotenv import load_dotenv
 from .registry import registry
 from tavily import TavilyClient
 
-# Load environment variables
 load_dotenv()
-
-# Initialize module logger
 logger = logging.getLogger(__name__)
 
-# Global TavilyClient instance (lazily initialized on first call)
+# Global lazy-initialized TavilyClient instance
 _tavily_client: Optional[TavilyClient] = None
 
+
 def get_tavily_client() -> TavilyClient:
-    """Returns a globally shared, lazily initialized TavilyClient instance.
-
-    Raises:
-        ValueError: If TAVILY_API_KEY environment variable is not defined.
-
-    Returns:
-        TavilyClient: An authenticated TavilyClient instance.
+    """Returns a shared, lazily initialized TavilyClient instance.
+    
+    Why lazy initialization: Prevents crashing app startup if TAVILY_API_KEY 
+    is missing until a web search is actually requested.
     """
     global _tavily_client
     if _tavily_client is None:
         api_key = os.getenv("TAVILY_API_KEY")
         if not api_key:
             logger.error("TAVILY_API_KEY environment variable is missing.")
-            raise ValueError("TAVILY_API_KEY not found in .env")
+            raise ValueError("TAVILY_API_KEY not found in .env file.")
         _tavily_client = TavilyClient(api_key=api_key)
-        logger.debug("Successfully initialized TavilyClient.")
+        logger.debug("TavilyClient initialized successfully.")
     return _tavily_client
+
 
 @registry.register(
     name="web_search",
-    description="Search the web for up-to-date information. Returns list of results with title, url, and content snippet.",
+    description="Search the web for up-to-date information. Returns list of results with title, url, and snippet.",
     parameter_schema={
         "type": "object",
         "properties": {
             "query": {"type": "string", "description": "Search query string"},
             "max_results": {
-                "type": "integer", 
-                "description": "Maximum results (max 5, default 5)", 
+                "type": "integer",
+                "description": "Maximum results to return (max 5, default 5)",
                 "default": 5
             }
         },
@@ -50,35 +46,27 @@ def get_tavily_client() -> TavilyClient:
     }
 )
 def web_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
-    """Performs a web search via the Tavily Search API.
-
-    Args:
-        query (str): The search query keywords/phrase.
-        max_results (int): The maximum number of search results to return (capped at 5).
-
-    Returns:
-        List[Dict[str, str]]: A list of dictionaries representing search result records,
-            each containing keys 'title', 'url', and 'snippet'.
+    """Performs a web search using the Tavily Search API.
+    
+    Why Tavily: Unlike standard search engines, Tavily provides clean, LLM-optimized 
+    text snippets directly, avoiding complex HTML scraping and page parsing.
     """
-    logger.info(f"Querying Tavily search with query='{query}', max_results={max_results}")
+    logger.info(f"Searching web for query='{query}', max_results={max_results}")
     try:
         client = get_tavily_client()
         response = client.search(query=query, max_results=max_results)
-        
-        results: List[Dict[str, str]] = []
-        for result in response.get("results", []):
-            snippet = result.get("content", "")
-            # Truncate overly long content snippets to save LLM context space
-            if len(snippet) > 1000:
-                snippet = snippet[:1000] + "..."
-            results.append({
-                "title": result.get("title", ""),
-                "url": result.get("url", ""),
-                "snippet": snippet
-            })
-            
-        logger.debug(f"Retrieved {len(results)} search results from Tavily.")
+
+        results = [
+            {
+                "title": item.get("title", ""),
+                "url": item.get("url", ""),
+                "snippet": item.get("content", "")[:1000] + "..." if len(item.get("content", "")) > 1000 else item.get("content", "")
+            }
+            for item in response.get("results", [])
+        ]
+
+        logger.debug(f"Retrieved {len(results)} search results.")
         return results
     except Exception as e:
-        logger.error(f"Error executing web search for query '{query}': {e}", exc_info=True)
-        raise
+        logger.error(f"Error executing web search for '{query}': {e}", exc_info=True)
+        raise

@@ -3,11 +3,14 @@ venv/
 .venv/
 env/
 .env
+myvenv/
 
 # Python bytecode
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
+
 
 # Environment variables (contains API keys)
 .env

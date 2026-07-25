@@ -1,348 +1,226 @@
-# 🤖 Agent Orchestration System (AOS)
-[![CI/CD Status](https://github.com/divyyadav007/Agent-Orchestration-System-with-Tool-Use-Memory-and-Human-in-the-Loop/actions/workflows/test.yml/badge.svg)](https://github.com/divyyadav007/Agent-Orchestration-System-with-Tool-Use-Memory-and-Human-in-the-Loop/actions/workflows/test.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org)
-[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+# Agent Orchestration System (AOS)
 
-A production-grade, stateful multi-agent orchestration architecture built on **LangGraph** featuring supervisor planning, autonomous specialist execution, automated double-loop quality review, semantic long-term memory retrieval, and human-in-the-loop escalation.
+A stateful multi-agent LLM orchestration framework built on **LangGraph** featuring supervisor planning, autonomous specialist execution, double-loop quality review, hybrid memory, and human-in-the-loop escalation.
 
 ---
 
-## 🗺️ System Overview & Architecture
+## Overview
 
-The Agent Orchestration System (AOS) coordinates specialized LLM agents using a directed cyclic graph (DCG). The supervisor agent compiles a structured JSON plan for incoming requests. A selector node routes execution through specialists based on dependencies. Each specialist outcome undergoes automated verification review. If verification fails multiple times, execution halts, yielding control to an interactive human-in-the-loop dashboard.
+The **Agent Orchestration System (AOS)** coordinates specialized AI agents using a directed cyclic graph state machine. 
 
-### 1. Overall System Architecture
+### What Problem It Solves
+Single LLMs often struggle with complex, multi-step requests, hallucinations, or executing tasks without verification. AOS solves this by breaking user requests down into dependency-ordered subtasks, executing them through targeted specialists, scoring outputs with an automated reviewer agent, and escalating persistent failures to a human operator.
+
+### Who Should Use It
+Developers, researchers, and AI engineers building stateful multi-agent applications that require structured planning, tool usage, quality control, and human oversight.
+
+---
+
+## Features
+
+- **Stateful Supervisor Planner**: Decomposes natural language requests into structured JSON execution plans with subtask IDs, specialist assignments, and dependency chains.
+- **Specialist Agent Network**:
+  - 🔍 **Research Specialist**: Generates targeted search queries and searches the live web via Tavily API.
+  - ✍️ **Writing Specialist**: Synthesizes research into professional briefs, reports, and markdown summaries.
+  - 📊 **Data Specialist**: Processes text-based calculations, formatting, and transformations.
+  - 💻 **Code Specialist**: Handles workspace file operations and text persistence.
+- **Automated Double-Loop Quality Verification**: Reviewer agent scores specialist outputs (0.0 to 1.0) against task requirements; outputs scoring below 0.7 are automatically returned for retry with actionable feedback.
+- **Human-in-the-Loop (HITL) Escalation**: Uses LangGraph interrupts to pause execution when subtasks fail review multiple times, exposing state to the Streamlit UI dashboard for human approval or rejection.
+- **Hybrid Memory Architecture**:
+  - **Short-Term Memory**: Caches in-progress state graphs in Redis (with automatic in-memory dictionary fallback).
+  - **Long-Term Memory**: Semantically indexes completed tasks in ChromaDB to supply historical context to the supervisor planner.
+- **Execution Trace Visualizer**: Captures step durations, token usage counts, and tool calls in a hierarchical console tree layout.
+
+---
+
+## Architecture Overview
+
+The system processes incoming requests through a directed graph consisting of planning, selection, specialist execution, review, and escalation nodes:
+
 ```mermaid
 graph TD
-    User([User Request]) --> Supervisor[Supervisor Agent]
-    MemoryStore[(ChromaDB Long-Term Memory)] <--> |Semantic Search & Save| Supervisor
-    Supervisor --> |Structured Execution Plan| Validation{Validation Node}
-    Validation -->|Errors & Attempt < 3| Supervisor
-    Validation -->|Valid Plan| Selector[Selector Agent]
+    User([User Request]) --> Supervisor[Supervisor Planner]
+    LongMemory[(ChromaDB Long-Term Memory)] <--> |Semantic Context| Supervisor
+    Supervisor --> |Structured Plan| Validation{Plan Validation}
+    Validation -->|Errors & Retries < 3| Supervisor
+    Validation -->|Valid Plan| Selector[Selector Node]
     
     Selector --> |Active Subtask| SpecialistRouter{Specialist Router}
     
-    SpecialistRouter --> |Research Subtask| ResearchAgent[Research Specialist]
-    SpecialistRouter --> |Writing Subtask| WritingAgent[Writing Specialist]
-    SpecialistRouter --> |Data Subtask| DataAgent[Data Specialist]
-    SpecialistRouter --> |Code Subtask| CodeAgent[Code Specialist]
+    SpecialistRouter --> |Research Task| ResearchAgent[Research Specialist]
+    SpecialistRouter --> |Writing Task| WritingAgent[Writing Specialist]
+    SpecialistRouter --> |Data Task| DataAgent[Data Specialist]
+    SpecialistRouter --> |Code Task| CodeAgent[Code Specialist]
     
     ResearchAgent --> Reviewer[Reviewer Agent]
     WritingAgent --> Reviewer
     DataAgent --> Reviewer
     CodeAgent --> Reviewer
     
-    Reviewer --> |Task Passed| Selector
-    Reviewer --> |Task Failed & Retries < 2| SpecialistRouter
-    Reviewer --> |Task Failed & Retries >= 2| Escalation[Escalation / Human-in-the-Loop]
+    Reviewer --> |Score >= 0.7 (Pass)| Selector
+    Reviewer --> |Score < 0.7 & Retries < 2| SpecialistRouter
+    Reviewer --> |Score < 0.7 & Retries >= 2| Escalation[Escalation Node]
     
-    Escalation --> |Pause & Wait| StreamlitUI[Streamlit UI / Human Review]
-    StreamlitUI --> |Human Decision: Approve/Reject| Selector
+    Escalation --> |Yield Interrupt| StreamlitUI[Streamlit UI Dashboard]
+    StreamlitUI --> |Approve / Reject| Selector
     
-    Selector --> |All Tasks Completed| PurgeCache[ Purge Caches & Index in Long-Term Memory ]
-    PurgeCache --> FinalOutput([Final Outcome & Saved Files])
+    Selector --> |All Subtasks Complete| End([Workflow Complete])
 ```
 
 ---
 
-## 🌟 Key Features
+## Tech Stack
 
-* **🧠 Stateful Supervisor Planner:** Translates natural language requests into structured execution plans containing subtask IDs, descriptions, assignments, and dependency chains.
-* **🤖 Specialists Agent Network:** Autonomously executes target subtasks:
-  * **Research Specialist:** Generates targeted search queries and searches the web using the Tavily API.
-  * **Writing Specialist:** Synthesizes information into briefs, templates, and markdown files.
-  * **Data Specialist:** Executes text-based computations, transformations, and formatting.
-  * **Code Specialist:** Manages workspace file writes and formatting operations.
-* **🔄 Automated Double-Loop Quality Verification:** Reviewer LLM scores specialist task outputs (0.0 to 1.0) against expected metrics. Outputs scoring $< 0.7$ are sent back to the specialist with detailed correction feedback.
-* **🛑 Human-in-the-Loop (HITL) Escalation:** In case of persistent failure, LangGraph's state machine issues an `interrupt` to halt graph execution, exposing task state and prompting for human approval/rejection via the Streamlit dashboard.
-* **📚 Hybrid Memory Architecture:** 
-  * **Short-Term Memory:** Caches in-progress state graphs in Redis (with automatic in-memory dict fallbacks).
-  * **Long-Term Memory:** Semantically indexes completed tasks in a local ChromaDB vector store to inject context into the supervisor's planning phase.
-* **🔍 Execution Trace Visualizer:** Captures step durations, prompts, and token counts in real time, rendering them in a console-based hierarchical tree.
+- **Languages**: Python 3.10+ (Core orchestration & multi-agent system logic)
+- **Frameworks**: 
+  - **LangGraph**: Directed cyclic graph state machine & checkpointing engine
+  - **LangChain**: LLM client bindings, message structures, and prompt templates
+  - **Streamlit**: Web-based dashboard frontend
+- **AI / ML**: 
+  - **Groq API / OpenAI API**: Fast LLM inference gateway (`llama-3.1-8b-instant`, `gpt-oss-120b`)
+  - **Sentence Transformers**: `all-MiniLM-L6-v2` for ChromaDB vector embeddings
+- **Database / Storage**: 
+  - **ChromaDB**: Persistent vector database for long-term memory semantic indexing
+  - **Redis**: Key-value cache for short-term state snapshots
+  - **SQLite**: `agent_checkpoints.db` database for LangGraph state persistence
+- **Tools & Infrastructure**:
+  - **Tavily API**: LLM-optimized web search engine
+  - **Docker & Docker Compose**: Service containerization infrastructure
 
 ---
 
-## 📊 Workflows & Flowcharts
+## Folder Structure
 
-### 2. Specialist-Reviewer Execution Sequence
-```mermaid
-sequenceDiagram
-    participant S as Selector
-    participant Sp as Specialist
-    participant R as Reviewer
-    participant E as Escalation Node
-    participant H as Human Loop (UI)
-
-    S->>Sp: Select next eligible subtask
-    Sp->>Sp: Execute (execute_task) with parent dependency context
-    Sp->>R: Submit raw output
-    R->>R: Evaluate output score (score 0.0 - 1.0)
-    alt Score >= 0.7 (Passed)
-        R->>S: Return success state & record output
-    else Score < 0.7 & retries < 2
-        R->>Sp: Return feedback for retry
-    else Score < 0.7 & retries >= 2
-        R->>E: Route to Escalation
-        E->>H: Pause graph & yield interrupt
-        H->>E: Resume with decision (approve/reject)
-        E->>S: Apply decision and return control
-    end
-```
-
-### 3. Human Approval Routing Flow
-```mermaid
-graph TD
-    Start[Specialist Task Fails 2x] --> EscNode[Escalation Node]
-    EscNode --> Int[Yield LangGraph Interrupt]
-    Int --> UI[Streamlit UI displays Escalation & outputs]
-    UI --> Input{Human Decision}
-    Input -->|Approve| ApproveState[Set human_decision = 'approve' & Resume Graph]
-    Input -->|Reject| RejectState[Set human_decision = 'reject' & Resume Graph]
-    
-    ApproveState --> ResumeApprove[Mark task completed as human_approved: True]
-    RejectState --> ResumeReject[Mark task failed as human_rejected: True]
-    
-    ResumeApprove --> NextTask[Route back to Selector for next subtask]
-    ResumeReject --> NextTask
-```
-
-### 4. Hybrid Memory Flow
-```mermaid
-graph LR
-    SubTaskRun[Active Subtask Run] --> |Save state checkpoint| RedisCache[(Redis Short-Term Cache)]
-    RedisCache --> |If Redis offline| LocalDict[(In-Memory Dictionary)]
-    
-    UserRequest[New User Request] --> |Retrieve planning context| ChromaDB[(ChromaDB Persistent Vector DB)]
-    ChromaDB --> |Inject past execution templates| SupervisorNode[Supervisor Planner]
-    
-    PurgeNode[Workflow Complete Node] --> |Index final task outcome summary| ChromaDB
-    PurgeNode --> |Clear cache keys| RedisCache
-```
-
-### 5. Tool Invocation Flow
-```mermaid
-sequenceDiagram
-    participant LLM as specialist_llm
-    participant Reg as tool_registry
-    participant Tool as registered_tool
-    participant Tracer as graph_tracer
-
-    LLM->>LLM: Bind schemas and invoke (tool_choice=auto)
-    alt LLM decides to call tool
-        LLM->>Reg: Call registry.execute(tool_name, arguments)
-        Reg->>Tool: Execute function handler
-        Tool-->>Reg: Return execution output value
-        Reg->>Tracer: add_tool_call(name, args, result, duration)
-        Reg-->>LLM: Return output text response
-    else LLM answers directly
-        LLM-->>LLM: Output final response text
-    end
+```text
+Multi-Agent-Orchestration-System/
+├── frontend/
+│   └── review-ui/
+│       └── app.py              # Streamlit web dashboard interface
+├── src/
+│   ├── core/
+│   │   ├── specialists/        # Specialist agent implementations (Research, Writing, Data, Code)
+│   │   ├── graph.py            # StateGraph builder and router logic
+│   │   ├── human_loop.py       # Human-in-the-loop escalation node
+│   │   ├── models.py           # Pydantic data models (SubTask, ExecutionPlan)
+│   │   ├── reviewer.py         # Automated quality reviewer node
+│   │   ├── selector.py         # Subtask dependency router node
+│   │   ├── state.py            # Global WorkflowState schema
+│   │   └── supervisor.py       # Supervisor task planner node
+│   ├── memory/
+│   │   ├── long_term.py        # ChromaDB vector store interface
+│   │   ├── manager.py          # Memory orchestrator facade
+│   │   └── short_term.py       # Redis state store with local fallback
+│   ├── observability/
+│   │   └── tracer.py           # Hierarchical execution tracer
+│   ├── tools/
+│   │   ├── file_io.py          # Workspace file saving tool
+│   │   ├── registry.py        # Central tool registry engine
+│   │   └── web_search.py       # Tavily search tool implementation
+│   └── utils/
+│       └── llm.py              # LLM client setup and rate-limit backoff handler
+├── tests/                      # Unit and integration test suite
+├── docker-compose.yml          # Container configuration for Redis service
+├── Dockerfile                  # Container image build file
+└── requirements.txt            # Python dependencies manifest
 ```
 
 ---
 
-## 🚀 Installation & Local Setup
+## Installation
 
-### Prerequisites
-* Python 3.11+
-* Redis server (optional; fallback to in-memory dict is automatic)
-
-### 1. Repository Setup
+### 1. Clone Repository
 ```bash
-# Clone the repository
 git clone https://github.com/divyyadav007/Agent-Orchestration-System-with-Tool-Use-Memory-and-Human-in-the-Loop.git
 cd Agent-Orchestration-System-with-Tool-Use-Memory-and-Human-in-the-Loop
+```
 
-# Initialize and activate the virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+### 2. Create Virtual Environment
+```bash
+python -m venv myvenv
+# On Windows (PowerShell):
+.\myvenv\Scripts\Activate.ps1
+# On Linux/macOS:
+source myvenv/bin/activate
+```
 
-# Upgrade pip and install package dependencies
-python -m pip install --upgrade pip
+### 3. Install Dependencies
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. Environment Configuration
-Copy `.env.example` to `.env` and fill in your keys:
+### 4. Configure Environment Variables
+Copy `.env.example` to `.env` and populate your API credentials:
 ```bash
 cp .env.example .env
 ```
 
-Ensure your `.env` contains:
-```ini
-# Groq API Configuration (Fast LLM Gateway)
-GROQ_API_KEY="gsk_..."
-
-# Tavily API Configuration (Search Specialist Engine)
-TAVILY_API_KEY="tvly_..."
-
-# LLM Selection
-LLM_MODEL="llama-3.1-8b-instant"
-
-# Memory Configuration
-CHROMA_DB_PATH="./chroma_data"
-REDIS_URL="redis://localhost:6379/0"
-REDIS_TTL=3600
-```
-
-### 3. Running Services locally (Redis via Docker)
-If you wish to use Redis locally, you can start it via Docker Compose:
+### 5. Run Web Interface
 ```bash
-docker-compose up -d redis
+python -m streamlit run frontend/review-ui/app.py
 ```
+Open your browser and navigate to `http://localhost:8501`.
 
----
-
-## 🐳 Docker Deployment
-
-To launch the entire Agent Orchestration System in a containerized environment (Streamlit Dashboard + Redis):
-
+### 6. Run Services via Docker (Optional)
+To launch the Redis cache service or containerized stack:
 ```bash
-# Build images and start container infrastructure
-docker-compose up --build
-```
-The Streamlit UI will be accessible at [http://localhost:8501](http://localhost:8501).
-
----
-
-## 💻 Usage & Execution Examples
-
-### 1. Launching the Streamlit UI
-```bash
-streamlit run frontend/review-ui/app.py
-```
-Open your browser and navigate to [http://localhost:8501](http://localhost:8501).
-
-### 2. Running Test Scripts via CLI
-You can execute test scripts from the repository root directory:
-```bash
-# Test the graph plan compiler
-python -m tests.test_graph
-
-# Test tool execution registries
-python -m tests.test_tools
-
-# Test supervisor plan generation
-python -m tests.test_supervisor
-
-# Test long-term research specialist
-python -m tests.test_research
+docker-compose up -d
 ```
 
 ---
 
-## 📂 Project Structure
+## Environment Variables
 
-```text
-├── .github/                       # GitHub Workflows & CI/CD Pipelines
-│   └── workflows/                 # CI Linting and testing pipelines
-│       ├── lint.yml
-│       └── test.yml
-├── docs/                          # Project documentation and historical reports
-│   └── bug_analysis_report.md
-├── examples/                      # Output artifacts and generated briefs
-│   └── output/
-│       ├── CEO_RamMandirScam_Brief.txt
-│       └── Modi_Seychelles_brief.txt
-├── frontend/                      # Streamlit UI Dashboard
-│   └── review-ui/
-│       └── app.py
-├── src/                           # Primary Application Source Code
-│   ├── core/                      # LangGraph Engine & Node Routing
-│   │   ├── specialists/           # Specialist Agent Implementations
-│   │   │   ├── base.py
-│   │   │   ├── code.py
-│   │   │   ├── data.py
-│   │   │   ├── nodes.py
-│   │   │   ├── research.py
-│   │   │   └── writing.py
-│   │   ├── graph.py
-│   │   ├── human_loop.py
-│   │   ├── models.py
-│   │   ├── reviewer.py
-│   │   ├── selector.py
-│   │   └── state.py
-│   ├── memory/                    # Short-term and Long-term Memory Systems
-│   │   ├── long_term.py
-│   │   ├── manager.py
-│   │   └── short_term.py
-│   ├── observability/             # Real-time Execution Tracing Callback Handlers
-│   │   └── tracer.py
-│   ├── tools/                     # System Tool Invocations
-│   │   ├── file_io.py
-│   │   ├── registry.py
-│   │   └── web_search.py
-│   └── utils/                     # Generic utilities (LLM interfaces, retry mechanisms)
-│       └── llm.py
-├── tests/                         # Test suites and runners
-│   ├── test_graph.py
-│   ├── test_human_loop.py
-│   ├── test_orchestration.py
-│   ├── test_research.py
-│   ├── test_supervisor.py
-│   └── test_tools.py
-├── .env.example                   # Template env variables config
-├── .gitignore                     # Git ignore rules
-├── docker-compose.yml             # Docker multi-service configuration
-├── Dockerfile                     # Streamlit container configuration
-├── LICENSE                        # MIT License
-├── Makefile                       # Project development shortcuts
-├── requirements.txt               # Dependencies listing
-└── pyproject.toml                 # Standard python metadata configurations
-```
+| Variable | Description | Required |
+| :--- | :--- | :---: |
+| `GROQ_API_KEY` | API key for Groq LLM inference gateway access | Yes |
+| `TAVILY_API_KEY` | API key for Tavily web search tool execution | Yes |
+| `LLM_MODEL` | LLM model identifier string (e.g., `llama-3.1-8b-instant`) | No |
+| `CHROMA_DB_PATH` | Local disk directory path for ChromaDB vector store (default: `./chroma_data`) | No |
+| `REDIS_URL` | Connection URL for Redis short-term cache (default: `redis://localhost:6379/0`) | No |
+| `REDIS_TTL` | Time-to-live in seconds for short-term state keys (default: `3600`) | No |
 
 ---
 
-## 🛠️ API & Code Interfaces Documentation
+## Usage
 
-### `src/tools/registry.py`
-The tool registry provides a `@registry.register` decorator to dynamically register and schema-document any Python function as a runnable agent tool:
-
-```python
-from src.tools import registry
-
-@registry.register(
-    name="save_file",
-    description="Save text content to a file in the workspace directory.",
-    parameter_schema={
-        "type": "object",
-        "properties": {
-            "filename": {"type": "string"},
-            "content": {"type": "string"}
-        },
-        "required": ["filename", "content"]
-    }
-)
-def save_file(filename: str, content: str) -> str:
-    # file writing logic...
-    return "Success"
-```
-
-### `src/utils/llm.py`
-Initializes a chat client pointing to the Groq API gateway:
-* `get_llm(model_name: Optional[str], temperature: float) -> ChatOpenAI`
-* `invoke_with_retry(llm: BaseChatModel, messages: List[BaseMessage], max_retries: int) -> Any`
+1. Launch the Streamlit dashboard by running:
+   ```bash
+   python -m streamlit run frontend/review-ui/app.py
+   ```
+2. Enter a Thread ID in the sidebar (e.g., `dashboard_run_1`) to isolate run state and checkpoints.
+3. Enter your request prompt into the main text box (e.g., *"Research recent AI regulations, write a 200-word executive summary, and save it to a text file"*).
+4. Click **`🚀 Run Agent`**.
+5. Monitor real-time execution in the UI:
+   - **Plan Timeline**: Shows subtasks, assigned specialists, and completion status.
+   - **Output Logs**: Displays outputs generated by specialists and reviewer scores.
+   - **Trace Terminal**: Renders hierarchical execution spans and token usage metrics.
+6. **Human Approval Flow**: If a task fails review 2+ times, the UI presents an escalation card prompting you to **Approve** or **Reject** the subtask.
 
 ---
 
-## 🛣️ Roadmap & Future Improvements
+## Screenshots
 
-- [ ] **Dynamic Tool Registration:** Allow specialists to download or construct tool schemas during runtime.
-- [ ] **Parallel Specialist Execution:** Support multi-threading in selector nodes to trigger independent tasks concurrently.
-- [ ] **Local LLM Integration:** Add configurations to run Ollama for offline execution.
-- [ ] **Advanced Cost & Token Tracking:** Integrate pricing trackers for usage dashboards.
+<!-- Screenshot Placeholders -->
+![Main Dashboard Overview](docs/screenshots/dashboard_overview.png)
+*Figure 1: Streamlit User Dashboard and Configuration Sidebar.*
+
+![Execution Plan Timeline](docs/screenshots/execution_plan.png)
+*Figure 2: Real-time Subtask Execution Timeline and Reviewer Scores.*
+
+![Human-in-the-Loop Escalation](docs/screenshots/human_escalation.png)
+*Figure 3: Human-in-the-Loop Approval Interface for Escalated Subtasks.*
 
 ---
 
-## 📄 License
+## Future Improvements
 
-This repository is licensed under the [MIT License](LICENSE).
+- Add support for alternative search providers (e.g., DuckDuckGo, Serper API).
+- Implement multi-modal specialist agents (e.g., vision analysis and chart generation).
+- Expose a FastAPI REST API server for programmatic headless graph execution.
+- Expand parallel subtask execution for independent graph branches.
 
 ---
 
-## 🙏 Acknowledgements
+## License
 
-* [LangGraph Developers](https://github.com/langchain-ai/langgraph) for the stateful graph framework.
-* [Groq Cloud Team](https://groq.com) for fast inference model endpoints.
-* [Tavily](https://tavily.com) for real-time web search integrations.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
