@@ -54,7 +54,9 @@ def supervisor_node(state: WorkflowState) -> Dict[str, Any]:
     """
     logger.info("Supervisor node: Generating execution plan.")
     llm = get_llm(temperature=0)
-    structured_llm = llm.with_structured_output(ExecutionPlan)
+    # Use function_calling method for maximum compatibility across Groq model gateways
+    structured_llm = llm.with_structured_output(ExecutionPlan, method="function_calling")
+
 
     user_request = state["user_request"]
     similar_tasks = memory_manager.get_context_for_planning(user_request)
