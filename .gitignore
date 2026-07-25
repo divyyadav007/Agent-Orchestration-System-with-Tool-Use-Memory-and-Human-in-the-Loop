@@ -12,9 +12,11 @@ __pycache__/
 .pytest_cache/
 
 
-# Environment variables (contains API keys)
+# Environment variables & keys (contains API keys / SSH keys)
 .env
 .env.local
+*.pem
+
 
 # ChromaDB persistent data
 chroma_data/
