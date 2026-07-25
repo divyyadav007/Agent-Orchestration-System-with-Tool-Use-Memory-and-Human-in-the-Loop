@@ -22,7 +22,11 @@ if ! command -v docker &> /dev/null; then
     echo "✅ Docker installed successfully."
 fi
 
-# 3. Create .env file if it doesn't exist
+# 3. Clean up failed docker build caches to free space
+echo "🧹 Pruning unused Docker build cache..."
+docker system prune -f || true
+
+# 4. Create .env file if it doesn't exist
 if [ ! -f .env ]; then
     echo "⚠️  .env file not found. Copying .env.example..."
     cp .env.example .env
@@ -33,7 +37,7 @@ fi
 PORT=$(grep -E '^HOST_PORT=' .env | cut -d '=' -f2 | tr -d '"' | tr -d "'" || echo "8502")
 PORT=${PORT:-8502}
 
-# 4. Build and run Docker containers using 'docker compose' or 'docker-compose'
+# 5. Build and run Docker containers using 'docker compose' or 'docker-compose'
 echo "🛠️ Building and starting container services via Docker Compose on Port ${PORT}..."
 if docker compose version &> /dev/null; then
     docker compose up --build -d
