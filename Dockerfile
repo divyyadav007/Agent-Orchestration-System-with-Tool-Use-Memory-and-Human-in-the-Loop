@@ -1,6 +1,5 @@
 FROM python:3.11-slim
 
-# Prevent Python from writing .pyc files and force unbuffered stdout/stderr logs
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
@@ -14,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install lightweight CPU-only PyTorch to prevent downloading 6GB+ CUDA GPU binaries on EC2
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
 # Copy requirements first to leverage Docker layer caching
 COPY requirements.txt .
