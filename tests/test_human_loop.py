@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.core.graph import build_graph
@@ -28,7 +29,7 @@ initial_state = {
     "awaiting_human": False,
     "escalation_reason": None,
     "human_decision": None,
-    "human_feedback": None
+    "human_feedback": None,
 }
 
 if __name__ == "__main__":

@@ -14,8 +14,8 @@ _tavily_client: Optional[TavilyClient] = None
 
 def get_tavily_client() -> TavilyClient:
     """Returns a shared, lazily initialized TavilyClient instance.
-    
-    Why lazy initialization: Prevents crashing app startup if TAVILY_API_KEY 
+
+    Why lazy initialization: Prevents crashing app startup if TAVILY_API_KEY
     is missing until a web search is actually requested.
     """
     global _tavily_client
@@ -36,19 +36,15 @@ def get_tavily_client() -> TavilyClient:
         "type": "object",
         "properties": {
             "query": {"type": "string", "description": "Search query string"},
-            "max_results": {
-                "type": "integer",
-                "description": "Maximum results to return (max 5, default 5)",
-                "default": 5
-            }
+            "max_results": {"type": "integer", "description": "Maximum results to return (max 5, default 5)", "default": 5},
         },
-        "required": ["query"]
-    }
+        "required": ["query"],
+    },
 )
 def web_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
     """Performs a web search using the Tavily Search API.
-    
-    Why Tavily: Unlike standard search engines, Tavily provides clean, LLM-optimized 
+
+    Why Tavily: Unlike standard search engines, Tavily provides clean, LLM-optimized
     text snippets directly, avoiding complex HTML scraping and page parsing.
     """
     logger.info(f"Searching web for query='{query}', max_results={max_results}")
@@ -60,7 +56,9 @@ def web_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
             {
                 "title": item.get("title", ""),
                 "url": item.get("url", ""),
-                "snippet": item.get("content", "")[:1000] + "..." if len(item.get("content", "")) > 1000 else item.get("content", "")
+                "snippet": (
+                    item.get("content", "")[:1000] + "..." if len(item.get("content", "")) > 1000 else item.get("content", "")
+                ),
             }
             for item in response.get("results", [])
         ]
@@ -69,4 +67,4 @@ def web_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
         return results
     except Exception as e:
         logger.error(f"Error executing web search for '{query}': {e}", exc_info=True)
-        raise
+        raise

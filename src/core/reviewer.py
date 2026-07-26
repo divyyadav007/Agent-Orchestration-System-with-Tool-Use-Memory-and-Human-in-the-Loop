@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class ReviewResult(BaseModel):
     """Quality evaluation output from the Reviewer Agent."""
+
     score: float = Field(..., description="Quality verification score (0.0 to 1.0)")
     feedback: str = Field(..., description="Improvement instructions if score < 0.7")
     passes: bool = Field(..., description="True if output satisfies quality thresholds")
@@ -35,9 +36,9 @@ def _extract_json_text(text: str) -> str:
 
 def reviewer_node(state: WorkflowState) -> Dict[str, Any]:
     """LangGraph Reviewer Node: Automated Double-Loop Quality Verification.
-    
-    Why this exists: Specialist LLMs can hallucinate or miss key requirements. 
-    The Reviewer scores outputs ($< 0.7$ fails). Passed tasks advance to the next step; 
+
+    Why this exists: Specialist LLMs can hallucinate or miss key requirements.
+    The Reviewer scores outputs ($< 0.7$ fails). Passed tasks advance to the next step;
     failed tasks trigger retries with specific feedback.
     """
     task_id = state.get("current_task_id")
@@ -60,7 +61,9 @@ def reviewer_node(state: WorkflowState) -> Dict[str, Any]:
     llm = get_llm(temperature=0)
     messages = [
         SystemMessage(content=REVIEWER_SYSTEM_PROMPT),
-        HumanMessage(content=f"Task: {subtask.description}\nExpected type: {subtask.expected_output_type}\nActual output:\n{output_str}\n\nReturn ONLY valid JSON.")
+        HumanMessage(
+            content=f"Task: {subtask.description}\nExpected type: {subtask.expected_output_type}\nActual output:\n{output_str}\n\nReturn ONLY valid JSON."
+        ),
     ]
 
     review: ReviewResult = ReviewResult(score=0.5, feedback="", passes=True)
@@ -83,7 +86,7 @@ def reviewer_node(state: WorkflowState) -> Dict[str, Any]:
             "output": output_str,
             "assigned_to": state["current_task_assigned_to"],
             "review_score": review.score,
-            "passed": True
+            "passed": True,
         }
         return {
             "completed_tasks": completed,
@@ -91,12 +94,8 @@ def reviewer_node(state: WorkflowState) -> Dict[str, Any]:
             "current_task_output": None,
             "review_feedback": None,
             "current_task_retry_count": 0,
-            "messages": [{"role": "system", "content": f"Task {task_id} reviewed, score={review.score}"}]
+            "messages": [{"role": "system", "content": f"Task {task_id} reviewed, score={review.score}"}],
         }
     else:
         logger.warning(f"Reviewer: Task '{task_id}' FAILED (score={review.score}). Feedback: {review.feedback}")
-        return {
-            "review_feedback": review.feedback,
-            "current_task_retry_count": retry_count + 1
-        }
-
+        return {"review_feedback": review.feedback, "current_task_retry_count": retry_count + 1}

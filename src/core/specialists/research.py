@@ -21,7 +21,7 @@ Rules:
 
 class ResearchSpecialist(SpecialistBase):
     """Research Specialist Agent: Queries web search and formats structured JSON results.
-    
+
     Why a 3-step pipeline is used:
     1. Query Generation: Refines complex task prompts into crisp search query terms.
     2. Tool Execution: Directly calls Tavily web search.
@@ -29,11 +29,7 @@ class ResearchSpecialist(SpecialistBase):
     """
 
     def __init__(self) -> None:
-        super().__init__(
-            name="research",
-            system_prompt=RESEARCH_SYSTEM_PROMPT,
-            tools=["web_search"]
-        )
+        super().__init__(name="research", system_prompt=RESEARCH_SYSTEM_PROMPT, tools=["web_search"])
 
     def execute_task(self, task_description: str, previous_outputs: Optional[Dict[str, Any]] = None) -> str:
         logger.info(f"[{self.name}] Researching: '{task_description[:80]}...'")
@@ -42,7 +38,9 @@ class ResearchSpecialist(SpecialistBase):
         llm = get_llm(temperature=0)
         query_prompt = [
             SystemMessage(content="You are an expert at creating web search queries."),
-            HumanMessage(content=f"Generate a concise search query for this task. Output ONLY the query text.\nTask: {task_description}")
+            HumanMessage(
+                content=f"Generate a concise search query for this task. Output ONLY the query text.\nTask: {task_description}"
+            ),
         ]
         query = invoke_with_retry(llm, query_prompt).content.strip().strip('"')
 
@@ -56,8 +54,7 @@ class ResearchSpecialist(SpecialistBase):
         # Step 3: Format search results into requested JSON array
         format_prompt = [
             SystemMessage(content=self.system_prompt),
-            HumanMessage(content=f"Format search results into the required JSON array format.\nSearch Results: {raw_results}")
+            HumanMessage(content=f"Format search results into the required JSON array format.\nSearch Results: {raw_results}"),
         ]
         formatting_llm = get_llm(temperature=0).bind_tools([], tool_choice="none")
         return invoke_with_retry(formatting_llm, format_prompt).content
-

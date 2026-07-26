@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 def build_graph(checkpointer: Any = None) -> CompiledStateGraph:
     """Constructs and compiles the stateful LangGraph multi-agent orchestration workflow.
-    
+
     Why StateGraph: LangGraph manages complex cyclic agent execution as a state machine.
-    Checkpointers (like SqliteSaver) persist graph state across steps and allow 
+    Checkpointers (like SqliteSaver) persist graph state across steps and allow
     pausing for human approval (interrupts).
     """
     logger.info("Initializing multi-agent StateGraph structure.")
@@ -47,10 +47,7 @@ def build_graph(checkpointer: Any = None) -> CompiledStateGraph:
             return "supervisor"
         return "selector"
 
-    builder.add_conditional_edges("validate", after_validate, {
-        "supervisor": "supervisor",
-        "selector": "selector"
-    })
+    builder.add_conditional_edges("validate", after_validate, {"supervisor": "supervisor", "selector": "selector"})
 
     def after_selector(state: WorkflowState) -> str:
         """Route to the specialist assigned to the active subtask, or END if all subtasks complete."""
@@ -64,13 +61,17 @@ def build_graph(checkpointer: Any = None) -> CompiledStateGraph:
         logger.info(f"Routing subtask '{task_id}' to '{target_node}'.")
         return target_node
 
-    builder.add_conditional_edges("selector", after_selector, {
-        "research_specialist": "research_specialist",
-        "writing_specialist": "writing_specialist",
-        "code_specialist": "code_specialist",
-        "data_specialist": "data_specialist",
-        END: END
-    })
+    builder.add_conditional_edges(
+        "selector",
+        after_selector,
+        {
+            "research_specialist": "research_specialist",
+            "writing_specialist": "writing_specialist",
+            "code_specialist": "code_specialist",
+            "data_specialist": "data_specialist",
+            END: END,
+        },
+    )
 
     # Connect Specialists to Quality Reviewer
     builder.add_edge("research_specialist", "reviewer")
@@ -95,18 +96,22 @@ def build_graph(checkpointer: Any = None) -> CompiledStateGraph:
         logger.info(f"Task '{task_id}' failed review. Retrying on specialist '{target_node}'.")
         return target_node
 
-    builder.add_conditional_edges("reviewer", after_reviewer, {
-        "research_specialist": "research_specialist",
-        "writing_specialist": "writing_specialist",
-        "code_specialist": "code_specialist",
-        "data_specialist": "data_specialist",
-        "selector": "selector",
-        "escalation": "escalation",
-        END: END
-    })
+    builder.add_conditional_edges(
+        "reviewer",
+        after_reviewer,
+        {
+            "research_specialist": "research_specialist",
+            "writing_specialist": "writing_specialist",
+            "code_specialist": "code_specialist",
+            "data_specialist": "data_specialist",
+            "selector": "selector",
+            "escalation": "escalation",
+            END: END,
+        },
+    )
 
     # Loop escalation back to selector after human decision is applied
     builder.add_edge("escalation", "selector")
 
     logger.info("Compiling StateGraph with checkpointer.")
-    return builder.compile(checkpointer=checkpointer)
+    return builder.compile(checkpointer=checkpointer)

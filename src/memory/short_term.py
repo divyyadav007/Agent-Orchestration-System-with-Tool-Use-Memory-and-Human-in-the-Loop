@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 
 class ShortTermMemory:
     """Short-Term Memory Manager: Caches transient subtask state graph snapshots.
-    
-    Why Redis with local fallback: Redis provides fast state persistence across 
-    microservices. If Redis is unavailable locally, it automatically falls back 
+
+    Why Redis with local fallback: Redis provides fast state persistence across
+    microservices. If Redis is unavailable locally, it automatically falls back
     to a python dict cache so developers can run the system without Docker setup.
     """
 
@@ -90,4 +90,4 @@ class ShortTermMemory:
         self._local_cache.pop(key, None)
 
 
-short_term_memory = ShortTermMemory()
+short_term_memory = ShortTermMemory()

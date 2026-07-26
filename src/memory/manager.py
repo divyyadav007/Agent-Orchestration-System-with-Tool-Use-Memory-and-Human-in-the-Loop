@@ -6,13 +6,14 @@ from src.memory.long_term import long_term_memory
 # Initialize module logger
 logger = logging.getLogger(__name__)
 
+
 class MemoryManager:
     """Orchestrator coordinating short-term caching and semantic long-term agent memory operations."""
-    
+
     def __init__(self) -> None:
         self.short = short_term_memory
         self.long = long_term_memory
-    
+
     def get_context_for_planning(self, user_request: str) -> List[Dict[str, Any]]:
         """Retrieves semantic memory context for task planning.
 
@@ -24,7 +25,7 @@ class MemoryManager:
         """
         logger.debug(f"Retrieving planning context for user request: '{user_request[:80]}...'")
         return self.long.search_similar(user_request, n_results=3)
-    
+
     def save_task_state(self, task_id: str, state_snapshot: Dict[str, Any]) -> None:
         """Caches the current state of a task configuration in progress.
 
@@ -34,7 +35,7 @@ class MemoryManager:
         """
         logger.debug(f"Saving task state snapshot for task_id: '{task_id}'")
         self.short.save(task_id, state_snapshot)
-    
+
     def load_task_state(self, task_id: str) -> Optional[Dict[str, Any]]:
         """Loads a cached state of a task in progress.
 
@@ -46,7 +47,7 @@ class MemoryManager:
         """
         logger.debug(f"Loading task state snapshot for task_id: '{task_id}'")
         return self.short.load(task_id)
-    
+
     def complete_task(
         self,
         task_id: str,
@@ -54,7 +55,7 @@ class MemoryManager:
         plan_summary: str,
         tools_used: List[str],
         outcome: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Completes execution on a task: indexes details in vector memory and cleans up temporary state.
 

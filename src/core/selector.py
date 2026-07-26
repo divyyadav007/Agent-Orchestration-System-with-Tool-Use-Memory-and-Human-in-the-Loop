@@ -9,15 +9,15 @@ SPECIALIST_NODE_MAP: Dict[str, str] = {
     "research": "research_specialist",
     "data": "data_specialist",
     "writing": "writing_specialist",
-    "code": "code_specialist"
+    "code": "code_specialist",
 }
 
 
 def selector_node(state: WorkflowState) -> Dict[str, Any]:
     """LangGraph Selector Node: Chooses the next eligible subtask to execute.
-    
-    Why this exists: In a directed acyclic graph (DAG) of subtasks, some tasks depend 
-    on previous outputs. The Selector checks completed tasks and finds the next 
+
+    Why this exists: In a directed acyclic graph (DAG) of subtasks, some tasks depend
+    on previous outputs. The Selector checks completed tasks and finds the next
     subtask whose prerequisite dependencies are fully satisfied.
     """
     plan = state.get("plan")
@@ -44,8 +44,8 @@ def selector_node(state: WorkflowState) -> Dict[str, Any]:
                 "current_task_description": subtask.description,
                 "current_task_assigned_to": subtask.assigned_to,
                 "current_task_retry_count": 0,
-                "review_feedback": None
+                "review_feedback": None,
             }
 
     logger.info("Selector node: All subtasks completed successfully.")
-    return {"current_task_id": None}
+    return {"current_task_id": None}

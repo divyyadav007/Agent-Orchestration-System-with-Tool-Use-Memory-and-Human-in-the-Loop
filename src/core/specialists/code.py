@@ -11,13 +11,10 @@ You must:
 - Confirm successful write to the user with a confirmation message.
 """
 
+
 class CodeSpecialist(SpecialistBase):
     """Specialist agent responsible for code execution or environment file IO operations."""
-    
+
     def __init__(self) -> None:
         logger.debug("Initializing CodeSpecialist.")
-        super().__init__(
-            name="code",
-            system_prompt=CODE_SYSTEM_PROMPT,
-            tools=["save_file"]
-        )
+        super().__init__(name="code", system_prompt=CODE_SYSTEM_PROMPT, tools=["save_file"])

@@ -1,16 +1,19 @@
 import sys
 import io
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 from src.core.supervisor import supervisor_node
 from src.utils.llm import get_llm
 
 node = supervisor_node
 if __name__ == "__main__":
-    state = {"user_request": "I need a summary of recent news about AI regulations, then write a 200-word brief for my CEO, and save it to a file."}
+    state = {
+        "user_request": "I need a summary of recent news about AI regulations, then write a 200-word brief for my CEO, and save it to a file."
+    }
     result = node(state)
     plan = result["plan"]
     print("Overall goal:", plan.overall_goal)

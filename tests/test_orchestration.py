@@ -1,9 +1,10 @@
 import sys
 import io
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 import sqlite3
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -11,7 +12,8 @@ from langgraph.errors import GraphInterrupt
 from src.core.graph import build_graph
 from src.observability.tracer import GraphTracer
 from src.tools import registry
-from rich import print as rprint 
+from rich import print as rprint
+
 # Connect to SQLite checkpoint DB
 conn = sqlite3.connect("agent_checkpoints.db", check_same_thread=False)
 checkpointer = SqliteSaver(conn)
@@ -34,7 +36,7 @@ initial_state = {
     "awaiting_human": False,
     "escalation_reason": None,
     "human_decision": None,
-    "human_feedback": None
+    "human_feedback": None,
 }
 
 if __name__ == "__main__":
@@ -66,10 +68,7 @@ if __name__ == "__main__":
     registry.set_tracer(tracer)
 
     # Config with callbacks
-    config = {
-        "configurable": {"thread_id": "test_run_obs_fresh_12"},
-        "callbacks": [tracer]
-    }
+    config = {"configurable": {"thread_id": "test_run_obs_fresh_12"}, "callbacks": [tracer]}
 
     # Run graph
     try:

@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.core.graph import build_graph
@@ -12,7 +13,7 @@ if __name__ == "__main__":
         "user_request": "I need a summary of recent news about AI regulations, then write a 200-word brief for my CEO, and save it to a file.",
         "plan": None,
         "validation_errors": None,
-        "retry_count": 0
+        "retry_count": 0,
     }
 
     final_state = app.invoke(initial_state)

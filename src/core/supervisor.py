@@ -48,15 +48,14 @@ def validate_plan(plan: ExecutionPlan) -> Tuple[bool, Optional[str]]:
 
 def supervisor_node(state: WorkflowState) -> Dict[str, Any]:
     """LangGraph Supervisor Node: Generates structured execution plans.
-    
-    Why with_structured_output: Forces the LLM to output valid JSON strictly 
+
+    Why with_structured_output: Forces the LLM to output valid JSON strictly
     conforming to the Pydantic ExecutionPlan schema.
     """
     logger.info("Supervisor node: Generating execution plan.")
     llm = get_llm(temperature=0)
     # Use function_calling method for maximum compatibility across Groq model gateways
     structured_llm = llm.with_structured_output(ExecutionPlan, method="function_calling")
-
 
     user_request = state["user_request"]
     similar_tasks = memory_manager.get_context_for_planning(user_request)
@@ -69,7 +68,7 @@ def supervisor_node(state: WorkflowState) -> Dict[str, Any]:
 
     messages = [
         SystemMessage(content=SUPERVISOR_SYSTEM_PROMPT),
-        HumanMessage(content=f"User request: {user_request}\n{memory_context}")
+        HumanMessage(content=f"User request: {user_request}\n{memory_context}"),
     ]
 
     if state.get("validation_errors"):
@@ -79,11 +78,7 @@ def supervisor_node(state: WorkflowState) -> Dict[str, Any]:
     plan: ExecutionPlan = invoke_with_retry(structured_llm, messages)
     logger.info(f"Supervisor created plan: '{plan.overall_goal}'")
 
-    return {
-        "plan": plan,
-        "retry_count": state.get("retry_count", 0) + 1,
-        "memory_context": memory_context
-    }
+    return {"plan": plan, "retry_count": state.get("retry_count", 0) + 1, "memory_context": memory_context}
 
 
 def validation_node(state: WorkflowState) -> Dict[str, Any]:
@@ -93,4 +88,4 @@ def validation_node(state: WorkflowState) -> Dict[str, Any]:
         return {"validation_errors": "No plan found to validate."}
 
     is_valid, error = validate_plan(plan)
-    return {"validation_errors": error}
+    return {"validation_errors": error}

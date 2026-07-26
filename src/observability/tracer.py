@@ -8,9 +8,10 @@ from rich.tree import Tree
 # Initialize module logger
 logger = logging.getLogger(__name__)
 
+
 class ExecutionNode:
     """Represents a single span execution node in the trace dependency tree."""
-    
+
     def __init__(self, name: str, node_type: str = "node") -> None:
         self.name: str = name
         self.type: str = node_type
@@ -26,19 +27,14 @@ class ExecutionNode:
 
 class GraphTracer(BaseCallbackHandler):
     """Tracer callback engine logging agent, LLM, and tool invocations into a hierarchical tree format."""
-    
+
     def __init__(self) -> None:
         super().__init__()
         self.root: ExecutionNode = ExecutionNode("workflow", "graph")
         self.stack: List[ExecutionNode] = [self.root]
         logger.debug("GraphTracer callback handler initialized.")
 
-    def on_chain_start(
-        self,
-        serialized: Optional[Dict[str, Any]],
-        inputs: Dict[str, Any],
-        **kwargs: Any
-    ) -> None:
+    def on_chain_start(self, serialized: Optional[Dict[str, Any]], inputs: Dict[str, Any], **kwargs: Any) -> None:
         """Fires when a LangChain/LangGraph chain execution step begins."""
         if serialized is None:
             serialized = {}
@@ -46,7 +42,7 @@ class GraphTracer(BaseCallbackHandler):
         node = ExecutionNode(name, "node")
         node.start_time = datetime.utcnow()
         node.input_data = inputs
-        
+
         self.stack[-1].children.append(node)
         self.stack.append(node)
         logger.debug(f"Tracer Chain Start: '{name}'")
@@ -62,23 +58,18 @@ class GraphTracer(BaseCallbackHandler):
         node.output_data = outputs
         logger.debug(f"Tracer Chain End: '{node.name}' ({node.duration_ms:.1f}ms)")
 
-    def on_llm_start(
-        self,
-        serialized: Optional[Dict[str, Any]],
-        prompts: List[str],
-        **kwargs: Any
-    ) -> None:
+    def on_llm_start(self, serialized: Optional[Dict[str, Any]], prompts: List[str], **kwargs: Any) -> None:
         """Fires when LLM processing begins."""
         if len(self.stack) == 0:
             self.stack = [self.root]
         name = "llm_call"
         if serialized and isinstance(serialized, dict):
             name = serialized.get("name", name)
-            
+
         llm_node = ExecutionNode(name, "llm")
         llm_node.start_time = datetime.utcnow()
         llm_node.input_data = {"prompts": prompts}
-        
+
         self.stack[-1].children.append(llm_node)
         self.stack.append(llm_node)
         logger.debug(f"Tracer LLM Start: '{name}'")
@@ -91,7 +82,7 @@ class GraphTracer(BaseCallbackHandler):
         node.end_time = datetime.utcnow()
         if node.start_time:
             node.duration_ms = (node.end_time - node.start_time).total_seconds() * 1000
-            
+
         try:
             usage = response.llm_output.get("token_usage", {})
             node.token_usage = {
@@ -101,12 +92,12 @@ class GraphTracer(BaseCallbackHandler):
             }
         except Exception:
             pass
-            
+
         try:
             node.output_data = {"content": response.generations[0][0].text}
         except Exception:
             pass
-            
+
         logger.debug(f"Tracer LLM End: '{node.name}' ({node.duration_ms:.1f}ms)")
 
     def add_tool_call(self, tool_name: str, params: Dict[str, Any], result: Any, duration_ms: float) -> None:
@@ -124,7 +115,7 @@ class GraphTracer(BaseCallbackHandler):
         tool_node.duration_ms = duration_ms
         tool_node.input_data = params
         tool_node.output_data = result
-        
+
         if len(self.stack) > 0:
             self.stack[-1].children.append(tool_node)
         logger.debug(f"Tracer Tool Call Appended: '{tool_name}' ({duration_ms:.1f}ms)")

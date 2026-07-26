@@ -6,8 +6,10 @@ from datetime import datetime
 # Initialize module logger
 logger = logging.getLogger(__name__)
 
+
 class ToolDefinition(BaseModel):
     """Configuration definition representing a single registered tool."""
+
     name: str = Field(..., description="Unique identification name of the tool")
     description: str = Field(..., description="Detailed description of what the tool accomplishes")
     parameter_schema: Dict[str, Any] = Field(..., description="JSON Schema definition for the expected parameters")
@@ -19,6 +21,7 @@ class ToolDefinition(BaseModel):
 
 class ToolInvocation(BaseModel):
     """Audit log representing a single execution instance of a tool."""
+
     tool_name: str = Field(..., description="Name of the invoked tool")
     params: Dict[str, Any] = Field(..., description="Parameters supplied to the invocation")
     result: Any = Field(default=None, description="Returned result from the execution")
@@ -29,6 +32,7 @@ class ToolInvocation(BaseModel):
 
 class ToolRegistry:
     """Registry engine that handles registration, schema retrieval, and execution tracking of agent tools."""
+
     def __init__(self) -> None:
         self.tools: Dict[str, ToolDefinition] = {}
         self.invocation_log: List[ToolInvocation] = []
@@ -43,7 +47,9 @@ class ToolRegistry:
         logger.debug(f"Tracer set on ToolRegistry: {type(tracer).__name__}")
         self.tracer = tracer
 
-    def register(self, name: str, description: str, parameter_schema: Dict[str, Any]) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def register(
+        self, name: str, description: str, parameter_schema: Dict[str, Any]
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Decorator that registers a Python function as an executable agent tool.
 
         Args:
@@ -54,15 +60,14 @@ class ToolRegistry:
         Returns:
             Callable: Decorated wrapper registering the tool metadata on function load.
         """
+
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             self.tools[name] = ToolDefinition(
-                name=name,
-                description=description,
-                parameter_schema=parameter_schema,
-                function=func
+                name=name, description=description, parameter_schema=parameter_schema, function=func
             )
             logger.info(f"Successfully registered tool: '{name}'")
             return func
+
         return decorator
 
     def execute(self, tool_name: str, params: Dict[str, Any]) -> Any:
@@ -82,11 +87,11 @@ class ToolRegistry:
         if tool_name not in self.tools:
             logger.error(f"Execution failed: Tool '{tool_name}' is not registered.")
             raise ValueError(f"Tool '{tool_name}' not registered.")
-            
+
         tool = self.tools[tool_name]
         invocation = ToolInvocation(tool_name=tool_name, params=params)
         self.invocation_log.append(invocation)
-        
+
         logger.info(f"Executing tool '{tool_name}' with parameters: {params}")
         start = datetime.utcnow()
         try:
@@ -94,12 +99,12 @@ class ToolRegistry:
                 raise ValueError(f"Tool '{tool_name}' does not have an execution handler function.")
             result = tool.function(**params)
             invocation.result = result
-            
+
             # Record execution span in GraphTracer if configured
             if self.tracer:
                 duration_ms = (datetime.utcnow() - start).total_seconds() * 1000
                 self.tracer.add_tool_call(tool_name, params, result, duration_ms)
-                
+
             logger.debug(f"Tool '{tool_name}' executed successfully.")
             return result
         except Exception as e:
@@ -116,14 +121,7 @@ class ToolRegistry:
             List[Dict[str, Any]]: Array of dictionary declarations formatted for tool binding.
         """
         return [
-            {
-                "type": "function",
-                "function": {
-                    "name": t.name,
-                    "description": t.description,
-                    "parameters": t.parameter_schema
-                }
-            }
+            {"type": "function", "function": {"name": t.name, "description": t.description, "parameters": t.parameter_schema}}
             for t in self.tools.values()
         ]
 

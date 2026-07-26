@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 
 class SpecialistBase:
     """Base class for all specialized agents (Research, Writing, Data, Code).
-    
-    Why this pattern exists: Inheriting from SpecialistBase ensures every specialist 
-    agent has a consistent tool-binding interface, dependency context ingestion, 
+
+    Why this pattern exists: Inheriting from SpecialistBase ensures every specialist
+    agent has a consistent tool-binding interface, dependency context ingestion,
     and multi-turn tool execution loop.
     """
 
@@ -23,8 +23,7 @@ class SpecialistBase:
 
         # Select matching tool schemas registered in ToolRegistry
         self.tool_schemas: List[Dict[str, Any]] = [
-            schema for schema in registry.get_tool_schemas()
-            if schema["function"]["name"] in self.tool_names
+            schema for schema in registry.get_tool_schemas() if schema["function"]["name"] in self.tool_names
         ]
 
     def execute_task(self, task_description: str, previous_outputs: Optional[Dict[str, Any]] = None) -> str:
@@ -32,10 +31,7 @@ class SpecialistBase:
         logger.info(f"[{self.name}] Executing task: '{task_description[:80]}...'")
         llm = get_llm(temperature=0)
 
-        messages = [
-            SystemMessage(content=self.system_prompt),
-            HumanMessage(content=task_description)
-        ]
+        messages = [SystemMessage(content=self.system_prompt), HumanMessage(content=task_description)]
 
         # Inject context from completed prerequisite subtasks
         if previous_outputs:
@@ -83,4 +79,3 @@ class SpecialistBase:
         fallback_llm = get_llm(temperature=0).bind_tools([], tool_choice="none")
         messages.append(HumanMessage(content="Please provide your final answer now."))
         return invoke_with_retry(fallback_llm, messages).content
-

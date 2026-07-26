@@ -1,6 +1,6 @@
-
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 import streamlit as st
 import sqlite3
@@ -15,7 +15,8 @@ from src.tools import registry
 st.set_page_config(page_title="Agent Dashboard", layout="wide")
 
 # Custom CSS for rich professional aesthetics
-st.markdown("""
+st.markdown(
+    """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -98,7 +99,9 @@ h1 {
     line-height: 1.4;
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 st.title("🤖 Agent Orchestration System")
 st.markdown("Multi‑agent system with Supervisor, Specialists, Reviewer & Human‑in‑the‑Loop")
@@ -112,9 +115,11 @@ with st.sidebar:
     st.write("Model: Groq / Mistral (from .env)")
 
 # ---------- Main area ----------
-user_request = st.text_area("Enter your request:", 
+user_request = st.text_area(
+    "Enter your request:",
     value="I need a summary of recent news about AI regulations, then write a 200-word brief for my CEO, and save it to a file.",
-    height=100)
+    height=100,
+)
 
 col1, col2, col3 = st.columns([1, 1, 2])
 with col1:
@@ -161,17 +166,17 @@ if st.session_state.plan is None and st.session_state.final_state is None:
         if state_snapshot and state_snapshot.values:
             st.session_state.plan = state_snapshot.values.get("plan")
             st.session_state.completed_tasks = state_snapshot.values.get("completed_tasks", {})
-            
+
             # Check if currently paused/interrupted
             if state_snapshot.next:
                 interrupt_payload = {}
                 if state_snapshot.tasks and state_snapshot.tasks[0].interrupts:
                     interrupt_payload = state_snapshot.tasks[0].interrupts[0].value
-                
+
                 st.session_state.paused_state = dict(state_snapshot.values)
                 if isinstance(interrupt_payload, dict):
-                    st.session_state.paused_state['escalation_reason'] = interrupt_payload.get("escalation_reason", "N/A")
-                
+                    st.session_state.paused_state["escalation_reason"] = interrupt_payload.get("escalation_reason", "N/A")
+
                 st.session_state.human_required = True
             else:
                 st.session_state.human_required = False
@@ -187,7 +192,7 @@ if reset_btn:
     st.session_state.completed_tasks = {}
     st.session_state.human_required = False
     st.session_state.paused_state = None
-    
+
     try:
         conn = sqlite3.connect("agent_checkpoints.db")
         cursor = conn.cursor()
@@ -197,7 +202,7 @@ if reset_btn:
         conn.close()
     except Exception as e:
         st.error(f"Error clearing database: {e}")
-        
+
     st.rerun()
 
 # ---------- Run Graph ----------
@@ -228,7 +233,7 @@ if run_btn and user_request.strip():
         "awaiting_human": False,
         "escalation_reason": None,
         "human_decision": None,
-        "human_feedback": None
+        "human_feedback": None,
     }
 
     config = {"configurable": {"thread_id": thread_id}, "callbacks": [st.session_state.tracer]}
@@ -238,17 +243,17 @@ if run_btn and user_request.strip():
         # Use stream to show progress
         with st.spinner("🔄 Running agent workflow..."):
             final_state = st.session_state.app.invoke(initial_state, config)  # invoke easier for display
-            
+
         state_snapshot = st.session_state.app.get_state(config)
         if state_snapshot and state_snapshot.next:
             interrupt_payload = {}
             if state_snapshot.tasks and state_snapshot.tasks[0].interrupts:
                 interrupt_payload = state_snapshot.tasks[0].interrupts[0].value
-            
+
             st.session_state.paused_state = dict(state_snapshot.values)
             if isinstance(interrupt_payload, dict):
-                st.session_state.paused_state['escalation_reason'] = interrupt_payload.get("escalation_reason", "N/A")
-            
+                st.session_state.paused_state["escalation_reason"] = interrupt_payload.get("escalation_reason", "N/A")
+
             st.session_state.human_required = True
             st.session_state.final_state = state_snapshot.values
             st.session_state.plan = state_snapshot.values.get("plan")
@@ -267,11 +272,11 @@ if run_btn and user_request.strip():
             interrupt_payload = {}
             if state_snapshot.tasks and state_snapshot.tasks[0].interrupts:
                 interrupt_payload = state_snapshot.tasks[0].interrupts[0].value
-            
+
             st.session_state.paused_state = dict(state_snapshot.values)
             if isinstance(interrupt_payload, dict):
-                st.session_state.paused_state['escalation_reason'] = interrupt_payload.get("escalation_reason", "N/A")
-            
+                st.session_state.paused_state["escalation_reason"] = interrupt_payload.get("escalation_reason", "N/A")
+
             st.session_state.human_required = True
             st.session_state.final_state = state_snapshot.values
             st.session_state.plan = state_snapshot.values.get("plan")
@@ -287,7 +292,7 @@ if st.session_state.human_required and st.session_state.paused_state:
     st.write(f"**Escalation Reason:** {state.get('escalation_reason','N/A')}")
     st.write(f"**Task ID:** {state.get('current_task_id','')}")
     st.write(f"**Task Description:** {state.get('current_task_description','')}")
-    st.text_area("Current Output:", value=state.get("current_task_output",""), height=200, disabled=True)
+    st.text_area("Current Output:", value=state.get("current_task_output", ""), height=200, disabled=True)
 
     col_a, col_b = st.columns(2)
     with col_a:
@@ -300,7 +305,7 @@ if st.session_state.human_required and st.session_state.paused_state:
                 # Resume graph with spinner
                 with st.spinner("🔄 Resuming workflow with approval..."):
                     resumed_state = app.invoke(None, config)
-                
+
                 state_snapshot = app.get_state(config)
                 if state_snapshot and state_snapshot.next:
                     interrupt_payload = {}
@@ -308,7 +313,7 @@ if st.session_state.human_required and st.session_state.paused_state:
                         interrupt_payload = state_snapshot.tasks[0].interrupts[0].value
                     st.session_state.paused_state = dict(state_snapshot.values)
                     if isinstance(interrupt_payload, dict):
-                        st.session_state.paused_state['escalation_reason'] = interrupt_payload.get("escalation_reason", "N/A")
+                        st.session_state.paused_state["escalation_reason"] = interrupt_payload.get("escalation_reason", "N/A")
                     st.session_state.human_required = True
                     st.session_state.final_state = state_snapshot.values
                     st.session_state.plan = state_snapshot.values.get("plan")
@@ -329,7 +334,7 @@ if st.session_state.human_required and st.session_state.paused_state:
                         interrupt_payload = state_snapshot.tasks[0].interrupts[0].value
                     st.session_state.paused_state = dict(state_snapshot.values)
                     if isinstance(interrupt_payload, dict):
-                        st.session_state.paused_state['escalation_reason'] = interrupt_payload.get("escalation_reason", "N/A")
+                        st.session_state.paused_state["escalation_reason"] = interrupt_payload.get("escalation_reason", "N/A")
                     st.session_state.human_required = True
                     st.session_state.final_state = state_snapshot.values
                     st.session_state.plan = state_snapshot.values.get("plan")
@@ -361,7 +366,7 @@ if st.session_state.human_required and st.session_state.paused_state:
                         interrupt_payload = state_snapshot.tasks[0].interrupts[0].value
                     st.session_state.paused_state = dict(state_snapshot.values)
                     if isinstance(interrupt_payload, dict):
-                        st.session_state.paused_state['escalation_reason'] = interrupt_payload.get("escalation_reason", "N/A")
+                        st.session_state.paused_state["escalation_reason"] = interrupt_payload.get("escalation_reason", "N/A")
                     st.session_state.human_required = True
                     st.session_state.final_state = state_snapshot.values
                     st.session_state.plan = state_snapshot.values.get("plan")
@@ -375,14 +380,15 @@ if st.session_state.plan:
     st.subheader("📋 Execution Plan")
     plan = st.session_state.plan
     st.write(f"**Overall Goal:** {plan.overall_goal}")
-    
+
     # Custom stepper rendering
     st.markdown('<div class="timeline-container">', unsafe_allow_html=True)
     for task in plan.subtasks:
         assigned = task.assigned_to
         badge_class = f"badge badge-{assigned}"
         deps_str = f"🔗 Dependencies: {task.dependencies}" if task.dependencies else "✅ Ready (No dependencies)"
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="timeline-card">
             <div class="{badge_class}">{assigned}</div>
             <div style="font-weight: 600; font-size: 1.1em; color: #f8fafc; margin-bottom: 4px;">Task {task.id}: {task.description}</div>
@@ -390,22 +396,27 @@ if st.session_state.plan:
                 {deps_str} &nbsp;|&nbsp; 📋 Expected: <i>{task.expected_output_type}</i>
             </div>
         </div>
-        """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
     st.info(f"🛣️ **Critical Path:** {plan.critical_path}")
 
 if st.session_state.completed_tasks:
     st.subheader("✅ Completed Tasks")
     for task_id, task_data in st.session_state.completed_tasks.items():
-        assigned = task_data.get('assigned_to', 'unknown')
-        score = task_data.get('review_score', 'N/A')
+        assigned = task_data.get("assigned_to", "unknown")
+        score = task_data.get("review_score", "N/A")
         with st.expander(f"Task {task_id}: {assigned.upper()} (Review Score: {score})"):
             badge_class = f"badge badge-{assigned}"
             st.markdown(f'<div class="{badge_class}">{assigned}</div>', unsafe_allow_html=True)
-            st.text_area("Specialist Output", value=task_data.get("output", ""), height=180, disabled=True, key=f"output_task_{task_id}")
+            st.text_area(
+                "Specialist Output", value=task_data.get("output", ""), height=180, disabled=True, key=f"output_task_{task_id}"
+            )
 
     # Check if we have a file output
     import os
+
     txt_files = [f for f in os.listdir(".") if f.endswith(".txt") and f != "requirements.txt"]
     if txt_files:
         st.subheader("📄 Generated File Contents")
@@ -421,24 +432,25 @@ if st.session_state.completed_tasks:
                             data=content,
                             file_name=txt_file,
                             mime="text/plain",
-                            key=f"txt_{txt_file}"
+                            key=f"txt_{txt_file}",
                         )
                     with col2:
                         try:
                             from fpdf import FPDF
+
                             pdf = FPDF()
                             pdf.add_page()
                             pdf.set_font("Helvetica", size=11)
                             # Handle utf-8 characters encoding gracefully
-                            pdf.multi_cell(0, 10, content.encode('latin-1', 'replace').decode('latin-1'))
+                            pdf.multi_cell(0, 10, content.encode("latin-1", "replace").decode("latin-1"))
                             pdf_bytes = bytes(pdf.output())
-                            
+
                             st.download_button(
                                 label=f"⬇️ Download PDF",
                                 data=pdf_bytes,
-                                file_name=txt_file.replace('.txt', '.pdf'),
+                                file_name=txt_file.replace(".txt", ".pdf"),
                                 mime="application/pdf",
-                                key=f"pdf_{txt_file}"
+                                key=f"pdf_{txt_file}",
                             )
                         except Exception as pdf_err:
                             st.error(f"Failed to generate PDF: {pdf_err}")
@@ -451,13 +463,14 @@ if st.session_state.tracer and st.session_state.tracer.root.children:
     st.subheader("🔍 Execution Trace")
     from rich.console import Console
     from rich.tree import Tree
+
     console = Console()
     tree = st.session_state.tracer.get_tree()
     # Capture rich tree as string
     with console.capture() as capture:
         console.print(tree)
     trace_str = capture.get()
-    
+
     # Custom terminal-like tracing render
     st.markdown(f'<div class="trace-terminal">{trace_str}</div>', unsafe_allow_html=True)
 

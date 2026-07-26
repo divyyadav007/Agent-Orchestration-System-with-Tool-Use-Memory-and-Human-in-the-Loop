@@ -11,23 +11,17 @@ logger = logging.getLogger(__name__)
     parameter_schema={
         "type": "object",
         "properties": {
-            "filename": {
-                "type": "string",
-                "description": "The target filename (e.g. 'report.txt' or 'summary.md')"
-            },
-            "content": {
-                "type": "string",
-                "description": "The text content to write to the file"
-            }
+            "filename": {"type": "string", "description": "The target filename (e.g. 'report.txt' or 'summary.md')"},
+            "content": {"type": "string", "description": "The text content to write to the file"},
         },
-        "required": ["filename", "content"]
-    }
+        "required": ["filename", "content"],
+    },
 )
 def save_file(filename: str, content: str) -> str:
     """Saves text content to a file in the workspace directory.
-    
-    Why os.path.basename is used: LLMs might attempt to generate absolute or relative 
-    file paths (e.g., ../../etc/passwd). Stripping to basename prevents security 
+
+    Why os.path.basename is used: LLMs might attempt to generate absolute or relative
+    file paths (e.g., ../../etc/passwd). Stripping to basename prevents security
     vulnerabilities by keeping all writes contained strictly inside the workspace.
     """
     try:
@@ -42,4 +36,3 @@ def save_file(filename: str, content: str) -> str:
     except Exception as e:
         logger.error(f"Failed to write file '{filename}': {e}", exc_info=True)
         return f"Error writing file: {str(e)}"
-
