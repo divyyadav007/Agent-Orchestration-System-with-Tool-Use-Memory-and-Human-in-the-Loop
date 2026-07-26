@@ -1,9 +1,7 @@
 import logging
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
-
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, ConfigDict, Field
 # Initialize module logger
 logger = logging.getLogger(__name__)
 
@@ -15,10 +13,7 @@ class ToolDefinition(BaseModel):
     description: str = Field(..., description="Detailed description of what the tool accomplishes")
     parameter_schema: Dict[str, Any] = Field(..., description="JSON Schema definition for the expected parameters")
     function: Optional[Callable[..., Any]] = Field(default=None, description="The executable Python function handler")
-
-    class Config:
-        arbitrary_types_allowed = True
-
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class ToolInvocation(BaseModel):
     """Audit log representing a single execution instance of a tool."""
