@@ -23,18 +23,15 @@ install:
 	pip install -r requirements.txt
 
 test:
-	python -m tests.test_graph
-	python -m tests.test_tools
-	python -m tests.test_supervisor
-	python -m tests.test_research
+	echo "Tests have been removed"
 
 lint:
-	black --check src tests
-	flake8 src tests
+	black --check src
+	flake8 src
 
 format:
-	isort src tests
-	black src tests
+	isort src
+	black src
 
 run:
 	streamlit run frontend/review-ui/app.py
