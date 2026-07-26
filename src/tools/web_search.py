@@ -1,9 +1,11 @@
 import logging
 import os
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
 from dotenv import load_dotenv
-from .registry import registry
 from tavily import TavilyClient
+
+from .registry import registry
 
 load_dotenv()
 logger = logging.getLogger(__name__)

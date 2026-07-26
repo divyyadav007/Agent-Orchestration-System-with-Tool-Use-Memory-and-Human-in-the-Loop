@@ -1,11 +1,12 @@
 import logging
-from typing import Dict, Any
-from src.core.state import WorkflowState
-from src.core.specialists.research import ResearchSpecialist
-from src.core.specialists.writing import WritingSpecialist
+from typing import Any, Dict
+
+from src.core.specialists.base import SpecialistBase
 from src.core.specialists.code import CodeSpecialist
 from src.core.specialists.data import DataSpecialist
-from src.core.specialists.base import SpecialistBase
+from src.core.specialists.research import ResearchSpecialist
+from src.core.specialists.writing import WritingSpecialist
+from src.core.state import WorkflowState
 
 # Initialize module logger
 logger = logging.getLogger(__name__)

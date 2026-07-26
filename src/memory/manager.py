@@ -1,7 +1,8 @@
 import logging
-from typing import Dict, Any, List, Optional
-from src.memory.short_term import short_term_memory
+from typing import Any, Dict, List, Optional
+
 from src.memory.long_term import long_term_memory
+from src.memory.short_term import short_term_memory
 
 # Initialize module logger
 logger = logging.getLogger(__name__)

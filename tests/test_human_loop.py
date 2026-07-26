@@ -3,9 +3,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.core.graph import build_graph
-from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3
+
+from langgraph.checkpoint.sqlite import SqliteSaver
+
+from src.core.graph import build_graph
 
 conn = sqlite3.connect("agent_checkpoints.db", check_same_thread=False)
 checkpointer = SqliteSaver(conn)

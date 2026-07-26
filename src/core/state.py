@@ -1,6 +1,8 @@
-from typing import TypedDict, Annotated, List, Dict, Optional, Any
 import operator
+from typing import Annotated, Any, Dict, List, Optional, TypedDict
+
 from langchain_core.messages import BaseMessage
+
 from src.core.models import ExecutionPlan
 
 

@@ -2,10 +2,11 @@ import logging
 import os
 import time
 from typing import Any, List, Optional
+
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import BaseMessage
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import BaseMessage
+from langchain_openai import ChatOpenAI
 from openai import RateLimitError
 
 # Load environment variables from .env file

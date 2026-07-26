@@ -1,7 +1,8 @@
 import logging
 import time
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from langchain_core.callbacks.base import BaseCallbackHandler
 from rich.tree import Tree
 

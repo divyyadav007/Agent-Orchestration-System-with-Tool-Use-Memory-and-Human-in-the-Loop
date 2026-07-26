@@ -1,4 +1,5 @@
 import logging
+
 from src.core.specialists.base import SpecialistBase
 
 # Initialize module logger

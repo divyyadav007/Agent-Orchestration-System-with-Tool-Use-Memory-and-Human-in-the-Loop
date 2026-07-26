@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import chromadb
 from chromadb.utils import embedding_functions
 
